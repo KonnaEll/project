@@ -75,20 +75,15 @@ int main(int argc, char* argv[])
     rewind(query_file_ptr);    
     rewind(input_file_ptr);
 
-    int query_dimension = 0;
+    int dimension = 0;
     while((c = fgetc(query_file_ptr)) != '\n')
     {
         if(c == ' ')
-            query_dimension++;
+            dimension++;
     }
-    printf("%d\n", query_dimension);
-    int input_dimension = 0;
-    while((c = fgetc(input_file_ptr)) != '\n')
-    {
-        if(c == ' ')
-            input_dimension++;
-    }
-    printf("%d\n", input_dimension);
+    printf("%d\n", dimension);
+
+    rewind(query_file_ptr);
 
 
 
