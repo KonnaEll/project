@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
 
 
 
-    h_function(input_dimension);
+    h_function(dimension);
 
 
 
