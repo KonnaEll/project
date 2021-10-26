@@ -133,8 +133,8 @@ int main(int argc, char* argv[])
             int r = (rand() % 20);
             g_for_p[i] = g_for_p[i] + (int)h_p_result[i][j] * r;
         }
-        g_for_p[i] = ((g_for_p[i] % M) + M) % M;
-        g_for_p[i] = ((g_for_p[i] % TableSize) + TableSize) % TableSize;
+        g_for_p[i] = ((g_for_p[i] % M) + M) % M;    // mod M
+        g_for_p[i] = ((g_for_p[i] % TableSize) + TableSize) % TableSize;    // mod TableSize
         printf("%d\n", g_for_p[i]);
     }
 
@@ -186,8 +186,8 @@ int main(int argc, char* argv[])
             int r = (rand() % 20);
             g_for_q[i] = g_for_q[i] + (int)h_q_result[i][j] * r;
         }
-        g_for_q[i] = ((g_for_q[i] % M) + M) % M;
-        g_for_q[i] = ((g_for_q[i] % TableSize) + TableSize) % TableSize;        
+        g_for_q[i] = ((g_for_q[i] % M) + M) % M;    // mod M
+        g_for_q[i] = ((g_for_q[i] % TableSize) + TableSize) % TableSize;    // mod TableSize
         printf("%d\n", g_for_q[i]);
     }
 
