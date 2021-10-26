@@ -8,6 +8,7 @@ int dimension;
 
 double normal_distribution_number()     // random number that follows the normal distribution
 {
+    // srand(time(0));
     double vect1 = (rand() / ((double)RAND_MAX + 1));
     double vect2 = (rand() / ((double)RAND_MAX + 1));
     double number = sqrt(-2*log(vect1)) * cos(2*3.14*vect2);  // mean μ =0, variance σ^2 = 1
@@ -27,7 +28,6 @@ double vectors_dot_product(char* p[0][dimension + 1], double v[], int index)   /
 
 double h_function(char* p[0][dimension + 1], int index)     // calculation of h function
 {
-    srand(time(0));
     double v[dimension];
     for(int i=0; i<dimension; i++)
     {
@@ -35,9 +35,9 @@ double h_function(char* p[0][dimension + 1], int index)     // calculation of h 
     }
 
     double dot_result = vectors_dot_product(p, v, index);   // calculate the dot product of the to vectors
-    
     int w = 4;  // stable
     double t = (double)(rand() % 4);    // calculate t uniformly in range [0, w)
+
     double h_result = floor((dot_result + t) / w);  // result of h function
 
     return h_result;
@@ -87,6 +87,8 @@ int main(int argc, char* argv[])
     printf("Dimension: %d\n", dimension);
     rewind(query_file_ptr);
 
+
+    // Work for input file
     char* p[input_items_counter][dimension + 1];    // array of the items of dataset
     for(int i=0; i<input_items_counter; i++)
         for(int j=0; j<=dimension; j++)
@@ -104,12 +106,38 @@ int main(int argc, char* argv[])
         }
     }
 
-    double h_result[input_items_counter]; // array with the results of the h function
+    int k = 4;
+    double h_p_result[input_items_counter][k]; // array with the results of the h function
     for(int i=0; i<input_items_counter; i++)
     {
-        h_result[i] = h_function(p, i);     // h_function with parameters the array of the dataset and the index
-        printf("%f\n", h_result[i]);
+        srand(time(0));
+        printf("Line %d\n", i);
+        for(int j=0; j<k; j++)
+        {
+            h_p_result[i][j] = h_function(p, i);   // h_function
+            printf("%f\n", h_p_result[i][j]);
+        }
     }
+
+    // Hash table for input file
+    int g_for_p[input_items_counter];
+    // int TableSize = input_items_counter / 4;
+    int TableSize = 4;
+    int M = (int)pow(2, 32) - 5;
+    for(int i=0; i<input_items_counter; i++)
+    {
+        printf("Line %d\n", i);
+        g_for_p[i] = 0;
+        for(int j=0; j<k; j++)
+        {
+            int r = (rand() % 20);
+            g_for_p[i] = g_for_p[i] + (int)h_p_result[i][j] * r;
+        }
+        g_for_p[i] = ((g_for_p[i] % M) + M) % M;
+        g_for_p[i] = ((g_for_p[i] % TableSize) + TableSize) % TableSize;
+        printf("%d\n", g_for_p[i]);
+    }
+
 
 
     // Same for query file
@@ -131,13 +159,37 @@ int main(int argc, char* argv[])
         }
     }
 
-    double h_q_result[query_items_counter]; // array with the results of the h function
+    double h_q_result[query_items_counter][k]; // array with the results of the h function
+    printf("\nQuery\n");
     for(int i=0; i<query_items_counter; i++)
     {
-        h_q_result[i] = h_function(q, i);   // h_function
-        printf("%f\n", h_q_result[i]);
+        srand(time(0));
+        printf("Line %d\n", i);
+        for(int j=0; j<k; j++)
+        {
+            h_q_result[i][j] = h_function(q, i);   // h_function
+            // printf("%f\n", h_q_result[i][j]);
+        }
     }
 
+    // Hash table for query file
+    int g_for_q[query_items_counter];
+    // TableSize = query_items_counter / 4;
+    TableSize = 3;
+    M = (int)pow(2, 32) - 5;
+    for(int i=0; i<query_items_counter; i++)
+    {
+        printf("Line %d\n", i);
+        g_for_q[i] = 0;
+        for(int j=0; j<k; j++)
+        {
+            int r = (rand() % 20);
+            g_for_q[i] = g_for_q[i] + (int)h_q_result[i][j] * r;
+        }
+        g_for_q[i] = ((g_for_q[i] % M) + M) % M;
+        g_for_q[i] = ((g_for_q[i] % TableSize) + TableSize) % TableSize;        
+        printf("%d\n", g_for_q[i]);
+    }
 
 
 
