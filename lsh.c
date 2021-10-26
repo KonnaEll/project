@@ -4,6 +4,10 @@
 #include <time.h>
 #include <math.h>
 
+// int query_items_counter = 0;
+// int input_items_counter = 0;
+int dimension;
+
 double normal_distribution_number()     // random number that follows the normal distribution
 {
     double vect1 = (rand() / ((double)RAND_MAX + 1));
@@ -13,25 +17,31 @@ double normal_distribution_number()     // random number that follows the normal
     return number;
 }
 
-double vectors_dot_product(double p[], double q[], int n)   // dot product of two vectors
+double vectors_dot_product(char* p[0][dimension + 1], double v[], int index)   // dot product of two vectors
 {
     double product = 0.0;
-    for(int i=0; i<=n; i++)
+    for(int i=0; i<dimension; i++)
     {
-        product = product + p[i] * q[i];
+        product = product + atof(p[index][i + 1]) * v[i];
     }
     return product;
 }
 
-int h_function(int n)
+double h_function(char* p[0][dimension + 1], int index)
 {
-    double v[n];
-    for(int i=0; i<n; i++)
+    double v[dimension];
+    for(int i=0; i<dimension; i++)
     {
         v[i] = normal_distribution_number();
     }
 
-    return 0;
+    double dot_result = vectors_dot_product(p, v, 2);
+    
+    int w = 4;
+    double t = (double)(rand() % 4);
+    double h_result = floor((dot_result + t) / w); 
+
+    return h_result;
 }
 
 
@@ -55,7 +65,6 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-
     char c;
     int query_items_counter = 0;
     for (c = getc(query_file_ptr); c != EOF; c = getc(query_file_ptr))  // count the items of the file query(axis x)
@@ -63,37 +72,47 @@ int main(int argc, char* argv[])
         if (c == '\n')
             query_items_counter = query_items_counter + 1;
     }
-    printf("%d\n", query_items_counter);
     int input_items_counter = 0;
     for (c = getc(input_file_ptr); c != EOF; c = getc(input_file_ptr))  // count the items of the file input(axis x)
     {
         if (c == '\n')
             input_items_counter = input_items_counter + 1;
     }
-    printf("%d\n", input_items_counter);
     
     rewind(query_file_ptr);    
     rewind(input_file_ptr);
 
-    int query_dimension = 0;
+    dimension = 0;
     while((c = fgetc(query_file_ptr)) != '\n')
     {
         if(c == ' ')
-            query_dimension++;
+            dimension++;
     }
-    printf("%d\n", query_dimension);
-    int input_dimension = 0;
-    while((c = fgetc(input_file_ptr)) != '\n')
+    printf("Dimension: %d\n", dimension);
+
+    rewind(query_file_ptr);
+
+
+    char* p[input_items_counter][dimension + 1];    // array of the items of dataset
+    for(int i=0; i<input_items_counter; i++)
+        for(int j=0; j<=dimension; j++)
+            p[i][j] = malloc(sizeof(char*) + 1);  // allocate memory for the array
+
+    int i = 0, j = 0;
+    while(fscanf(input_file_ptr, "%s", p[i][j]) != EOF)     // fill the array with the dataset
     {
-        if(c == ' ')
-            input_dimension++;
+        j++;
+        int c = fgetc(input_file_ptr);
+        if(c == '\n')
+        {
+            i++;
+            j = 0;
+        }
     }
-    printf("%d\n", input_dimension);
 
 
-
-    h_function(input_dimension);
-
+    double h_result = h_function(p, 0);
+    printf("%f\n", h_result);
 
 
 
