@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
     printf("Dimension: %d\n", dimension);
 
     rewind(query_file_ptr);
-
+    printf("lala\n");
     char* p[input_items_counter][dimension + 1];    // array of the items of dataset
     for(int i=0; i<input_items_counter; i++)
         for(int j=0; j<=dimension; j++)
