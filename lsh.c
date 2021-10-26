@@ -4,8 +4,6 @@
 #include <time.h>
 #include <math.h>
 
-// int query_items_counter = 0;
-// int input_items_counter = 0;
 int dimension;
 
 double normal_distribution_number()     // random number that follows the normal distribution
@@ -22,24 +20,25 @@ double vectors_dot_product(char* p[0][dimension + 1], double v[], int index)   /
     double product = 0.0;
     for(int i=0; i<dimension; i++)
     {
-        product = product + atof(p[index][i + 1]) * v[i];
+        product = product + atof(p[index][i + 1]) * v[i];   // calculation of dot product
     }
     return product;
 }
 
-double h_function(char* p[0][dimension + 1], int index)
+double h_function(char* p[0][dimension + 1], int index)     // calculation of h function
 {
+    srand(time(0));
     double v[dimension];
     for(int i=0; i<dimension; i++)
     {
-        v[i] = normal_distribution_number();
+        v[i] = normal_distribution_number();    // find random v vector that follows the normal distribution
     }
 
-    double dot_result = vectors_dot_product(p, v, 2);
+    double dot_result = vectors_dot_product(p, v, index);   // calculate the dot product of the to vectors
     
-    int w = 4;
-    double t = (double)(rand() % 4);
-    double h_result = floor((dot_result + t) / w); 
+    int w = 4;  // stable
+    double t = (double)(rand() % 4);    // calculate t uniformly in range [0, w)
+    double h_result = floor((dot_result + t) / w);  // result of h function
 
     return h_result;
 }
@@ -47,9 +46,6 @@ double h_function(char* p[0][dimension + 1], int index)
 
 int main(int argc, char* argv[])
 {
-    srand(time(0));
-    printf("%f\n", normal_distribution_number());
-
     FILE *query_file_ptr;
     query_file_ptr = fopen("query", "r");    // open query file
     if(query_file_ptr == NULL)
@@ -83,7 +79,7 @@ int main(int argc, char* argv[])
     rewind(input_file_ptr);
 
     dimension = 0;
-    while((c = fgetc(query_file_ptr)) != '\n')
+    while((c = fgetc(query_file_ptr)) != '\n')  // calculate the dimension of all the vectors. One vector is enough.
     {
         if(c == ' ')
             dimension++;
@@ -108,9 +104,39 @@ int main(int argc, char* argv[])
         }
     }
 
+    double h_result[input_items_counter]; // array with the results of the h function
+    for(int i=0; i<input_items_counter; i++)
+    {
+        h_result[i] = h_function(p, i);     // h_function with parameters the array of the dataset and the index
+        printf("%f\n", h_result[i]);
+    }
 
-    double h_result = h_function(p, 0);
-    printf("%f\n", h_result);
+
+    // Same for query file
+    char* q[query_items_counter][dimension + 1];    // array of the items of dataset
+    for(int i=0; i<query_items_counter; i++)
+        for(int j=0; j<=dimension; j++)
+            q[i][j] = malloc(sizeof(char*) + 1);  // allocate memory for the array
+
+    i = 0;
+    j = 0;
+    while(fscanf(query_file_ptr, "%s", q[i][j]) != EOF)     // fill the array with the dataset
+    {
+        j++;
+        int c = fgetc(query_file_ptr);
+        if(c == '\n')
+        {
+            i++;
+            j = 0;
+        }
+    }
+
+    double h_q_result[query_items_counter]; // array with the results of the h function
+    for(int i=0; i<query_items_counter; i++)
+    {
+        h_q_result[i] = h_function(q, i);   // h_function
+        printf("%f\n", h_q_result[i]);
+    }
 
 
 
