@@ -6,19 +6,18 @@
 
 int dimension;
 
-double normal_distribution_number()     // random number that follows the normal distribution
+float normal_distribution_number()     // random number that follows the normal distribution
 {
-    // srand(time(0));
-    double vect1 = (rand() / ((double)RAND_MAX + 1));
-    double vect2 = (rand() / ((double)RAND_MAX + 1));
-    double number = sqrt(-2*log(vect1)) * cos(2*3.14*vect2);  // mean μ =0, variance σ^2 = 1
+    float vect1 = (rand() / ((float)RAND_MAX + 1));
+    float vect2 = (rand() / ((float)RAND_MAX + 1));
+    float number = sqrt(-2*log(vect1)) * cos(2*3.14*vect2);  // mean μ =0, variance σ^2 = 1
 
     return number;
 }
 
-double vectors_dot_product(char* p[0][dimension + 1], double v[], int index)   // dot product of two vectors
+float vectors_dot_product(char* p[0][dimension + 1], float v[], int index)   // dot product of two vectors
 {
-    double product = 0.0;
+    float product = 0.0;
     for(int i=0; i<dimension; i++)
     {
         product = product + atof(p[index][i + 1]) * v[i];   // calculation of dot product
@@ -26,22 +25,28 @@ double vectors_dot_product(char* p[0][dimension + 1], double v[], int index)   /
     return product;
 }
 
-double h_function(char* p[0][dimension + 1], int index)     // calculation of h function
+float h_function(char* p[0][dimension + 1], int index)     // calculation of h function
 {
-    double v[dimension];
+    float v[dimension];
     for(int i=0; i<dimension; i++)
     {
         v[i] = normal_distribution_number();    // find random v vector that follows the normal distribution
     }
 
-    double dot_result = vectors_dot_product(p, v, index);   // calculate the dot product of the to vectors
+    float dot_result = vectors_dot_product(p, v, index);   // calculate the dot product of the to vectors
     int w = 4;  // stable
-    double t = (double)(rand() % 4);    // calculate t uniformly in range [0, w)
+    float t = (float)(rand() % 4);    // calculate t uniformly in range [0, w)
 
-    double h_result = floor((dot_result + t) / w);  // result of h function
+    float h_result = floor((dot_result + t) / w);  // result of h function
 
     return h_result;
 }
+
+struct Hash_Node
+{
+    int item;
+    struct Hash_Node* next;
+};
 
 
 int main(int argc, char* argv[])
@@ -107,7 +112,7 @@ int main(int argc, char* argv[])
     }
 
     int k = 4;
-    double h_p_result[input_items_counter][k]; // array with the results of the h function
+    float h_p_result[input_items_counter][k]; // array with the results of the h function
     for(int i=0; i<input_items_counter; i++)
     {
         srand(time(0));
@@ -120,22 +125,64 @@ int main(int argc, char* argv[])
     }
 
     // Hash table for input file
-    int g_for_p[input_items_counter];
+    int hash_index;
     // int TableSize = input_items_counter / 4;
     int TableSize = 4;
     int M = (int)pow(2, 32) - 5;
-    for(int i=0; i<input_items_counter; i++)
+    int L = 5;
+    struct Hash_Node* hash_tables[L][input_items_counter];
+    for(int n=0; n<L; n++)
     {
-        printf("Line %d\n", i);
-        g_for_p[i] = 0;
-        for(int j=0; j<k; j++)
+        printf("LALALA\n");
+        for(int i=0; i<input_items_counter; i++)
         {
-            int r = (rand() % 20);
-            g_for_p[i] = g_for_p[i] + (int)h_p_result[i][j] * r;
+            printf("Line %d\n", i);
+            hash_index = 0;
+            for(int j=0; j<k; j++)
+            {
+                int r = (rand() % 10);
+                hash_index = hash_index + (int)h_p_result[i][j] * r;
+            }
+            hash_index = ((hash_index % M) + M) % M;    // mod M
+            hash_index = ((hash_index % TableSize) + TableSize) % TableSize;    // mod TableSize
+            printf("%d\n", hash_index);
+            
+            
+            struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));
+            data_item->item = i + 1;
+            printf("pp\n");
+            // hash_tables[n][hash_index]->item = 1;
+            printf("ee\n");
+            // printf("%d\n", hash_tables[n][hash_index]->item);
+            printf("aa\n");
+            if(hash_tables[n][hash_index] == NULL)
+            {
+                printf("bb\n");
+
+                hash_tables[n][hash_index] = data_item;
+            }
+            else
+            {
+                printf("cc\n");
+                struct Hash_Node* temp = hash_tables[n][hash_index];
+                struct Hash_Node* temp_1;
+                while(temp != NULL)
+                {
+                    temp_1 = temp;
+                    temp = temp->next;
+                }
+                temp_1 = data_item;
+            }
+            
         }
-        g_for_p[i] = ((g_for_p[i] % M) + M) % M;    // mod M
-        g_for_p[i] = ((g_for_p[i] % TableSize) + TableSize) % TableSize;    // mod TableSize
-        printf("%d\n", g_for_p[i]);
+    }
+    printf("AAAAAAA\n");
+    for(int n=0; n<L; n++)
+    {
+        for(int i=0; i<input_items_counter; i++)
+        {
+            printf("%d\n", (hash_tables[n][i])->item);
+        }
     }
 
 
@@ -159,7 +206,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    double h_q_result[query_items_counter][k]; // array with the results of the h function
+    float h_q_result[query_items_counter][k]; // array with the results of the h function
     printf("\nQuery\n");
     for(int i=0; i<query_items_counter; i++)
     {
@@ -183,12 +230,12 @@ int main(int argc, char* argv[])
         g_for_q[i] = 0;
         for(int j=0; j<k; j++)
         {
-            int r = (rand() % 20);
+            int r = (rand() % 10);
             g_for_q[i] = g_for_q[i] + (int)h_q_result[i][j] * r;
         }
         g_for_q[i] = ((g_for_q[i] % M) + M) % M;    // mod M
         g_for_q[i] = ((g_for_q[i] % TableSize) + TableSize) % TableSize;    // mod TableSize
-        printf("%d\n", g_for_q[i]);
+        // printf("%d\n", g_for_q[i]);
     }
 
 
