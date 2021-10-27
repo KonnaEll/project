@@ -167,13 +167,14 @@ int main(int argc, char* argv[])
             {
                 printf("cc\n");
                 struct Hash_Node* temp = hash_tables[n][hash_index];
-                struct Hash_Node* temp_1;
-                while(temp != NULL)
+                // struct Hash_Node* temp_1;
+                while(hash_tables[n][hash_index]->next != NULL)
                 {
-                    temp_1 = temp;
-                    temp = temp->next;
+                    // temp_1 = temp;
+                    hash_tables[n][hash_index] = hash_tables[n][hash_index]->next;
                 }
-                temp_1 = data_item;
+                hash_tables[n][hash_index]->next = data_item;
+                hash_tables[n][hash_index] = temp;
             }
             
         }
@@ -184,8 +185,19 @@ int main(int argc, char* argv[])
         for(int i=0; i<input_items_counter; i++)
         {
             if(hash_tables[n][i] != NULL)
-                printf("%d\n", hash_tables[n][i]->item);
+            {
+                printf("%d ", hash_tables[n][i]->item);
+                while(hash_tables[n][i]->next != NULL)
+                {
+                    printf("List: ");
+                    hash_tables[n][i] = hash_tables[n][i]->next;
+                    printf("%d ", hash_tables[n][i]->item);
+                }
+                printf("\n");
+            }
         }
+        printf("\n");
+
     }
 
 
