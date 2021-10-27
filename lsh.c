@@ -133,6 +133,14 @@ int main(int argc, char* argv[])
     struct Hash_Node* hash_tables[L][input_items_counter];
     for(int n=0; n<L; n++)
     {
+        for(int i=0; i<input_items_counter; i++)
+        {
+            hash_tables[n][i] = NULL;
+        }
+    }
+    // int counter = 1;
+    for(int n=0; n<L; n++)
+    {
         printf("LALALA\n");
         for(int i=0; i<input_items_counter; i++)
         {
@@ -150,15 +158,9 @@ int main(int argc, char* argv[])
             
             struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));
             data_item->item = i + 1;
-            printf("pp\n");
-            // hash_tables[n][hash_index]->item = 1;
-            printf("ee\n");
-            // printf("%d\n", hash_tables[n][hash_index]->item);
-            printf("aa\n");
             if(hash_tables[n][hash_index] == NULL)
             {
                 printf("bb\n");
-
                 hash_tables[n][hash_index] = data_item;
             }
             else
@@ -181,7 +183,8 @@ int main(int argc, char* argv[])
     {
         for(int i=0; i<input_items_counter; i++)
         {
-            printf("%d\n", (hash_tables[n][i])->item);
+            if(hash_tables[n][i] != NULL)
+                printf("%d\n", hash_tables[n][i]->item);
         }
     }
 
