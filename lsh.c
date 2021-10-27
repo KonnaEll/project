@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
     while(fscanf(input_file_ptr, "%s", p[i][j]) != EOF)     // fill the array with the dataset
     {
         j++;
-        int c = fgetc(input_file_ptr);
+        c = fgetc(input_file_ptr);
         if(c == '\n')
         {
             i++;
@@ -123,85 +123,6 @@ int main(int argc, char* argv[])
             printf("%f\n", h_p_result[i][j]);
         }
     }
-
-    // Hash table for input file
-    int hash_index;
-    // int TableSize = input_items_counter / 4;
-    int TableSize = 4;
-    int M = (int)pow(2, 32) - 5;
-    int L = 5;
-    struct Hash_Node* hash_tables[L][input_items_counter];
-    for(int n=0; n<L; n++)
-    {
-        for(int i=0; i<input_items_counter; i++)
-        {
-            hash_tables[n][i] = NULL;
-        }
-    }
-    // int counter = 1;
-    for(int n=0; n<L; n++)
-    {
-        printf("LALALA\n");
-        for(int i=0; i<input_items_counter; i++)
-        {
-            printf("Line %d\n", i);
-            hash_index = 0;
-            for(int j=0; j<k; j++)
-            {
-                int r = (rand() % 10);
-                hash_index = hash_index + (int)h_p_result[i][j] * r;
-            }
-            hash_index = ((hash_index % M) + M) % M;    // mod M
-            hash_index = ((hash_index % TableSize) + TableSize) % TableSize;    // mod TableSize
-            printf("%d\n", hash_index);
-            
-            
-            struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));
-            data_item->item = i + 1;
-            if(hash_tables[n][hash_index] == NULL)
-            {
-                printf("bb\n");
-                hash_tables[n][hash_index] = data_item;
-            }
-            else
-            {
-                printf("cc\n");
-                struct Hash_Node* temp = hash_tables[n][hash_index];
-                // struct Hash_Node* temp_1;
-                while(hash_tables[n][hash_index]->next != NULL)
-                {
-                    // temp_1 = temp;
-                    hash_tables[n][hash_index] = hash_tables[n][hash_index]->next;
-                }
-                hash_tables[n][hash_index]->next = data_item;
-                hash_tables[n][hash_index] = temp;
-            }
-            
-        }
-    }
-    printf("AAAAAAA\n");
-    for(int n=0; n<L; n++)
-    {
-        for(int i=0; i<input_items_counter; i++)
-        {
-            if(hash_tables[n][i] != NULL)
-            {
-                printf("%d ", hash_tables[n][i]->item);
-                while(hash_tables[n][i]->next != NULL)
-                {
-                    printf("List: ");
-                    hash_tables[n][i] = hash_tables[n][i]->next;
-                    printf("%d ", hash_tables[n][i]->item);
-                }
-                printf("\n");
-            }
-        }
-        printf("\n");
-
-    }
-
-
-
     // Same for query file
     char* q[query_items_counter][dimension + 1];    // array of the items of dataset
     for(int i=0; i<query_items_counter; i++)
@@ -234,24 +155,206 @@ int main(int argc, char* argv[])
         }
     }
 
-    // Hash table for query file
-    int g_for_q[query_items_counter];
-    // TableSize = query_items_counter / 4;
-    TableSize = 3;
-    M = (int)pow(2, 32) - 5;
-    for(int i=0; i<query_items_counter; i++)
+
+    // Hash table for input file
+    int hash_index;
+    // int TableSize = input_items_counter / 4;
+    int TableSize = 4;
+    int M = (int)pow(2, 32) - 5;
+    int L = 5;
+    struct Hash_Node* hash_tables[L][input_items_counter + query_items_counter];
+    for(int n=0; n<L; n++)
     {
-        printf("Line %d\n", i);
-        g_for_q[i] = 0;
-        for(int j=0; j<k; j++)
+        for(int i=0; i<(input_items_counter + query_items_counter); i++)
         {
-            int r = (rand() % 10);
-            g_for_q[i] = g_for_q[i] + (int)h_q_result[i][j] * r;
+            hash_tables[n][i] = NULL;
         }
-        g_for_q[i] = ((g_for_q[i] % M) + M) % M;    // mod M
-        g_for_q[i] = ((g_for_q[i] % TableSize) + TableSize) % TableSize;    // mod TableSize
-        // printf("%d\n", g_for_q[i]);
     }
+
+
+    int r[k];
+    for(int n=0; n<L; n++)
+    {
+        printf("LALALA\n");
+        for(int i=0; i<k; i++)
+        {
+            r[i] = rand() % 10;
+        }
+        for(int i=0; i<input_items_counter; i++)
+        {
+            printf("Line %d\n", i);
+            hash_index = 0;
+            for(int j=0; j<k; j++)
+            {
+                hash_index = hash_index + (int)h_p_result[i][j] * r[j];
+            }
+            hash_index = ((hash_index % M) + M) % M;    // mod M
+            hash_index = ((hash_index % TableSize) + TableSize) % TableSize;    // mod TableSize
+            printf("%d\n", hash_index);
+
+            struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));
+            data_item->item = i + 1;
+            if(hash_tables[n][hash_index] == NULL)
+            {
+                printf("bb\n");
+                hash_tables[n][hash_index] = data_item;
+            }
+            else
+            {
+                printf("cc\n");
+                struct Hash_Node* temp = hash_tables[n][hash_index];
+                while(hash_tables[n][hash_index]->next != NULL)
+                {
+                    hash_tables[n][hash_index] = hash_tables[n][hash_index]->next;
+                }
+                hash_tables[n][hash_index]->next = data_item;
+                hash_tables[n][hash_index] = temp;
+            }
+        }
+        // for(int i=0; i<query_items_counter; i++)
+        // {
+        //     printf("Line %d\n", i);
+        //     hash_index = 0;
+        //     for(int j=0; j<k; j++)
+        //     {
+        //         hash_index = hash_index + (int)h_q_result[i][j] * r[j];
+        //     }
+        //     hash_index = ((hash_index % M) + M) % M;    // mod M
+        //     hash_index = ((hash_index % TableSize) + TableSize) % TableSize;    // mod TableSize
+        //     printf("%d\n", hash_index);
+
+        //     struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));
+        //     data_item->item = i + 1;
+        //     if(hash_tables[n][hash_index] == NULL)
+        //     {
+        //         printf("bb\n");
+        //         hash_tables[n][hash_index] = data_item;
+        //     }
+        //     else
+        //     {
+        //         printf("cc\n");
+        //         struct Hash_Node* temp = hash_tables[n][hash_index];
+        //         while(hash_tables[n][hash_index]->next != NULL)
+        //         {
+        //             hash_tables[n][hash_index] = hash_tables[n][hash_index]->next;
+        //         }
+        //         hash_tables[n][hash_index]->next = data_item;
+        //         hash_tables[n][hash_index] = temp;
+        //     }
+        // }
+    }
+
+    printf("AAAAAAA\n");
+    // struct Hash_Node* temp;
+    // for(int n=0; n<L; n++)
+    // {
+    //     for(int i=0; i<input_items_counter; i++)
+    //     {
+    //         if(hash_tables[n][i] != NULL)
+    //         {
+    //             printf("%d ", hash_tables[n][i]->item);
+    //             temp = hash_tables[n][i];
+    //             while(hash_tables[n][i]->next != NULL)
+    //             {
+    //                 printf("List: ");
+    //                 hash_tables[n][i] = hash_tables[n][i]->next;
+    //                 printf("%d ", hash_tables[n][i]->item);
+    //             }
+    //             printf("\n");
+    //         }
+    //         hash_tables[n][i] = temp;
+    //     }
+    //     printf("\n");
+    // }
+
+
+    // for(int i=0; i<L; i++)   // an thelw na vriskw to dianysma se kathe hash prepei na kanw disdiastato to r
+    // {
+
+    struct Hash_Node* temp;
+    hash_index = 0;
+    for(int j=0; j<k; j++)
+    {
+        hash_index = hash_index + (int)h_q_result[0][j] * r[j];
+    }
+    hash_index = ((hash_index % M) + M) % M;    // mod M
+    hash_index = ((hash_index % TableSize) + TableSize) % TableSize;    // mod TableSize
+    printf("hash %d\n", hash_index);
+
+    int min_dist = -1;
+    int nearest_neighbor = -1;
+    if(hash_tables[4][hash_index] != NULL)
+    {
+        printf("a %d ", hash_tables[4][hash_index]->item);
+
+        // calculate distance
+        int dist = 0;
+        for(int d=1; d<=dimension; d++)
+        {
+            dist = dist + pow((atoi(q[0][d]) - atoi(p[hash_tables[4][hash_index]->item - 1][d])), 2);
+        }
+        min_dist = sqrt(dist);
+        nearest_neighbor = hash_tables[4][hash_index]->item;
+        printf("first dist %d\n", min_dist);
+
+        temp = hash_tables[4][hash_index];
+        while(hash_tables[4][hash_index]->next != NULL)
+        {
+            printf("List: ");
+            hash_tables[4][hash_index] = hash_tables[4][hash_index]->next;
+            printf("%d ", hash_tables[4][hash_index]->item);
+
+            // calculate distance
+            dist = 0;
+            for(int d=1; d<=dimension; d++)
+            {
+                dist = dist + pow((atoi(q[0][d]) - atoi(p[hash_tables[4][hash_index]->item - 1][d])), 2);
+            }
+            dist = sqrt(dist);
+            printf("dist %d\n", dist);
+            if(dist < min_dist)
+            {
+                min_dist = dist;
+                nearest_neighbor = hash_tables[4][hash_index]->item;
+            }
+        }
+        printf("\n");
+    }
+    hash_tables[4][hash_index] = temp;
+
+    if(min_dist != -1)
+        printf("Nearest neighbor is %d with distance from query %d\n", nearest_neighbor, min_dist);
+    else
+        printf("There is no vector in this bucket!\n");
+
+    // }
+
+
+
+
+
+
+
+
+
+    // // Hash table for query file
+    // int g_for_q[query_items_counter];
+    // // TableSize = query_items_counter / 4;
+    // TableSize = 3;
+    // M = (int)pow(2, 32) - 5;
+    // for(int i=0; i<query_items_counter; i++)
+    // {
+    //     printf("Line %d\n", i);
+    //     g_for_q[i] = 0;
+    //     for(int j=0; j<k; j++)
+    //     {
+    //         int r = (rand() % 10);
+    //         g_for_q[i] = g_for_q[i] + (int)h_q_result[i][j] * r;
+    //     }
+    //     g_for_q[i] = ((g_for_q[i] % M) + M) % M;    // mod M
+    //     g_for_q[i] = ((g_for_q[i] % TableSize) + TableSize) % TableSize;    // mod TableSize
+    //     // printf("%d\n", g_for_q[i]);
+    // }
 
 
 
