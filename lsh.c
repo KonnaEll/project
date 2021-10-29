@@ -15,17 +15,17 @@ float normal_distribution_number()     // random number that follows the normal 
     return number;
 }
 
-float vectors_dot_product(char* p[0][dimension + 1], float v[], int index)   // dot product of two vectors
+float vectors_dot_product(int p[0][dimension + 1], float v[], int index)   // dot product of two vectors
 {
     float product = 0.0;
     for(int i=0; i<dimension; i++)
     {
-        product = product + atof(p[index][i + 1]) * v[i];   // calculation of dot product
+        product = product + (double)p[index][i + 1] * v[i];   // calculation of dot product
     }
     return product;
 }
 
-float h_function(char* p[0][dimension + 1], int index)     // calculation of h function
+float h_function(int p[0][dimension + 1], int index)     // calculation of h function
 {
     float v[dimension];
     for(int i=0; i<dimension; i++)
@@ -34,7 +34,7 @@ float h_function(char* p[0][dimension + 1], int index)     // calculation of h f
     }
 
     float dot_result = vectors_dot_product(p, v, index);   // calculate the dot product of the to vectors
-    int w = 4;  // stable
+    int w = 6;  // stable
     float t = (float)(rand() % 4);    // calculate t uniformly in range [0, w)
 
     float h_result = floor((dot_result + t) / w);  // result of h function
@@ -45,6 +45,7 @@ float h_function(char* p[0][dimension + 1], int index)     // calculation of h f
 struct Hash_Node
 {
     int item;
+    int ID;
     struct Hash_Node* next;
 };
 
@@ -52,14 +53,14 @@ struct Hash_Node
 int main(int argc, char* argv[])
 {
     FILE *query_file_ptr;
-    query_file_ptr = fopen("query", "r");    // open query file
+    query_file_ptr = fopen("query_small_id", "r");    // open query file
     if(query_file_ptr == NULL)
     {
         perror("Error\n");
         exit(1);
     }
     FILE *input_file_ptr;
-    input_file_ptr = fopen("input", "r");    // open input file
+    input_file_ptr = fopen("input_small_id", "r");    // open input file
     if(input_file_ptr == NULL)
     {
         perror("Error\n");
@@ -89,77 +90,69 @@ int main(int argc, char* argv[])
         if(c == ' ')
             dimension++;
     }
-    printf("Dimension: %d\n", dimension);
     rewind(query_file_ptr);
 
-
     // Work for input file
-    char* p[input_items_counter][dimension + 1];    // array of the items of dataset
-    for(int i=0; i<input_items_counter; i++)
-        for(int j=0; j<=dimension; j++)
-            p[i][j] = malloc(sizeof(char*) + 1);  // allocate memory for the array
-
+    int p[input_items_counter][dimension + 1];    // array of the items of dataset
     int i = 0, j = 0;
-    while(fscanf(input_file_ptr, "%s", p[i][j]) != EOF)     // fill the array with the dataset
+    char* x = malloc(sizeof(char*) + 1);
+    while(fscanf(input_file_ptr, "%s", x) != EOF)     // fill the array with the dataset
     {
+        p[i][j] = atoi(x);
         j++;
-        c = fgetc(input_file_ptr);
-        if(c == '\n')
+        if(j == dimension)
         {
             i++;
             j = 0;
         }
     }
+    // for(int i=0; i<input_items_counter; i++)
+    //     for(int j=0; j<dimension; j++)
+    //         printf("%d\n", p[i][j]);  // allocate memory for the array
 
     int k = 4;
     float h_p_result[input_items_counter][k]; // array with the results of the h function
     for(int i=0; i<input_items_counter; i++)
     {
         srand(time(0));
-        printf("Line %d\n", i);
         for(int j=0; j<k; j++)
         {
             h_p_result[i][j] = h_function(p, i);   // h_function
-            printf("%f\n", h_p_result[i][j]);
         }
     }
-    // Same for query file
-    char* q[query_items_counter][dimension + 1];    // array of the items of dataset
-    for(int i=0; i<query_items_counter; i++)
-        for(int j=0; j<=dimension; j++)
-            q[i][j] = malloc(sizeof(char*) + 1);  // allocate memory for the array
 
-    i = 0;
-    j = 0;
-    while(fscanf(query_file_ptr, "%s", q[i][j]) != EOF)     // fill the array with the dataset
+    // Same for query file
+    int q[query_items_counter][dimension + 1];    // array of the items of dataset
+    i = 0, j = 0;
+    char* y = malloc(sizeof(char*) + 1);
+    while(fscanf(query_file_ptr, "%s", y) != EOF)     // fill the array with the dataset
     {
+        q[i][j] = atoi(y);
         j++;
-        int c = fgetc(query_file_ptr);
-        if(c == '\n')
+        if(j == dimension)
         {
             i++;
             j = 0;
         }
     }
+    // for(int i=0; i<query_items_counter; i++)
+    //     for(int j=0; j<dimension; j++)
+    //         printf("%d\n", q[i][j]);  // allocate memory for the array
 
     float h_q_result[query_items_counter][k]; // array with the results of the h function
-    printf("\nQuery\n");
     for(int i=0; i<query_items_counter; i++)
     {
         srand(time(0));
-        printf("Line %d\n", i);
         for(int j=0; j<k; j++)
         {
             h_q_result[i][j] = h_function(q, i);   // h_function
-            // printf("%f\n", h_q_result[i][j]);
         }
     }
 
 
     // Hash table for input file
     int hash_index;
-    // int TableSize = input_items_counter / 4;
-    int TableSize = 4;
+    int TableSize = input_items_counter / 8;
     int M = (int)pow(2, 32) - 5;
     int L = 5;
     struct Hash_Node* hash_tables[L][input_items_counter + query_items_counter];
@@ -170,191 +163,223 @@ int main(int argc, char* argv[])
             hash_tables[n][i] = NULL;
         }
     }
-
-
     int r[k];
+    int ID;
     for(int n=0; n<L; n++)
     {
-        printf("LALALA\n");
         for(int i=0; i<k; i++)
         {
             r[i] = rand() % 10;
         }
         for(int i=0; i<input_items_counter; i++)
         {
-            printf("Line %d\n", i);
             hash_index = 0;
             for(int j=0; j<k; j++)
             {
                 hash_index = hash_index + (int)h_p_result[i][j] * r[j];
             }
-            hash_index = ((hash_index % M) + M) % M;    // mod M
-            hash_index = ((hash_index % TableSize) + TableSize) % TableSize;    // mod TableSize
-            printf("%d\n", hash_index);
+            hash_index = hash_index % M;    // mod M
+            if(hash_index < 0)
+            {
+                hash_index = hash_index * (-1);     // only positive number
+            }
+            ID = hash_index;
+            hash_index = hash_index % TableSize;    // mod TableSize
 
             struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));
             data_item->item = i + 1;
+            data_item->ID = ID;
             if(hash_tables[n][hash_index] == NULL)
             {
-                printf("bb\n");
                 hash_tables[n][hash_index] = data_item;
+                hash_tables[n][hash_index]->ID = ID;
             }
             else
             {
-                printf("cc\n");
                 struct Hash_Node* temp = hash_tables[n][hash_index];
                 while(hash_tables[n][hash_index]->next != NULL)
                 {
                     hash_tables[n][hash_index] = hash_tables[n][hash_index]->next;
                 }
                 hash_tables[n][hash_index]->next = data_item;
+                hash_tables[n][hash_index]->next->ID = ID;
                 hash_tables[n][hash_index] = temp;
             }
         }
-        // for(int i=0; i<query_items_counter; i++)
-        // {
-        //     printf("Line %d\n", i);
-        //     hash_index = 0;
-        //     for(int j=0; j<k; j++)
-        //     {
-        //         hash_index = hash_index + (int)h_q_result[i][j] * r[j];
-        //     }
-        //     hash_index = ((hash_index % M) + M) % M;    // mod M
-        //     hash_index = ((hash_index % TableSize) + TableSize) % TableSize;    // mod TableSize
-        //     printf("%d\n", hash_index);
-
-        //     struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));
-        //     data_item->item = i + 1;
-        //     if(hash_tables[n][hash_index] == NULL)
-        //     {
-        //         printf("bb\n");
-        //         hash_tables[n][hash_index] = data_item;
-        //     }
-        //     else
-        //     {
-        //         printf("cc\n");
-        //         struct Hash_Node* temp = hash_tables[n][hash_index];
-        //         while(hash_tables[n][hash_index]->next != NULL)
-        //         {
-        //             hash_tables[n][hash_index] = hash_tables[n][hash_index]->next;
-        //         }
-        //         hash_tables[n][hash_index]->next = data_item;
-        //         hash_tables[n][hash_index] = temp;
-        //     }
-        // }
     }
-
-    printf("AAAAAAA\n");
-    // struct Hash_Node* temp;
-    // for(int n=0; n<L; n++)
-    // {
-    //     for(int i=0; i<input_items_counter; i++)
-    //     {
-    //         if(hash_tables[n][i] != NULL)
-    //         {
-    //             printf("%d ", hash_tables[n][i]->item);
-    //             temp = hash_tables[n][i];
-    //             while(hash_tables[n][i]->next != NULL)
-    //             {
-    //                 printf("List: ");
-    //                 hash_tables[n][i] = hash_tables[n][i]->next;
-    //                 printf("%d ", hash_tables[n][i]->item);
-    //             }
-    //             printf("\n");
-    //         }
-    //         hash_tables[n][i] = temp;
-    //     }
-    //     printf("\n");
-    // }
-
 
     // for(int i=0; i<L; i++)   // an thelw na vriskw to dianysma se kathe hash prepei na kanw disdiastato to r
     // {
 
     struct Hash_Node* temp;
-    hash_index = 0;
-    for(int j=0; j<k; j++)
+    for(int m=0; m<query_items_counter; m++)    // for every query show the results
     {
-        hash_index = hash_index + (int)h_q_result[0][j] * r[j];
-    }
-    hash_index = ((hash_index % M) + M) % M;    // mod M
-    hash_index = ((hash_index % TableSize) + TableSize) % TableSize;    // mod TableSize
-    printf("hash %d\n", hash_index);
-
-    int min_dist = -1;
-    int nearest_neighbor = -1;
-    if(hash_tables[4][hash_index] != NULL)
-    {
-        printf("a %d ", hash_tables[4][hash_index]->item);
-
-        // calculate distance
-        int dist = 0;
-        for(int d=1; d<=dimension; d++)
+        hash_index = 0;
+        for(int j=0; j<k; j++)
         {
-            dist = dist + pow((atoi(q[0][d]) - atoi(p[hash_tables[4][hash_index]->item - 1][d])), 2);
+            hash_index = hash_index + (int)h_q_result[m][j] * r[j]; // find the bucket of the query
         }
-        min_dist = sqrt(dist);
-        nearest_neighbor = hash_tables[4][hash_index]->item;
-        printf("first dist %d\n", min_dist);
+        hash_index = hash_index % M;    // mod M
+        if(hash_index < 0)
+        {
+            hash_index = hash_index * (-1);
+        }
+        int k_ID = hash_index;  // ID for comparison
+        hash_index = hash_index % TableSize;    // mod TableSize
 
+        int min_dist = 10000;
+        int nearest_neighbor = -1;
         temp = hash_tables[4][hash_index];
-        while(hash_tables[4][hash_index]->next != NULL)
+        int counter = 0;
+        while(hash_tables[4][hash_index] != NULL)   // count the list
         {
-            printf("List: ");
+            counter++;
             hash_tables[4][hash_index] = hash_tables[4][hash_index]->next;
-            printf("%d ", hash_tables[4][hash_index]->item);
+        }
 
-            // calculate distance
-            dist = 0;
-            for(int d=1; d<=dimension; d++)
+        int N = 2;
+        int R = 10000;
+        int k_min_dist[counter];    // array of the distances
+        int k_nearest_neighbor[counter];    // array of the items
+        i = 0, j = 0;
+        hash_tables[4][hash_index] = temp;
+        int radius[counter];    // array for vectors within radius
+        while(hash_tables[4][hash_index] != NULL)
+        {
+            if(k_ID == hash_tables[4][hash_index]->ID)  // compare the IDs
             {
-                dist = dist + pow((atoi(q[0][d]) - atoi(p[hash_tables[4][hash_index]->item - 1][d])), 2);
+                // calculate distance
+                int dist = 0;
+                for(int d=1; d<=dimension; d++)
+                {
+                    dist = dist + pow((q[0][d] - p[hash_tables[4][hash_index]->item - 1][d]), 2);
+                }
+                dist = sqrt(dist);
+                if(dist < min_dist) // minimun LSH distance
+                {
+                    min_dist = dist;
+                    nearest_neighbor = hash_tables[4][hash_index]->item;
+                }
+
+                // k nearest neighbors
+                k_min_dist[i] = dist;
+                k_nearest_neighbor[i] = hash_tables[4][hash_index]->item;
+                i++;
+
+                // vectors in range r
+                if(dist < R)
+                {
+                    radius[j] = hash_tables[4][hash_index]->item;
+                    j++;
+                }
             }
-            dist = sqrt(dist);
-            printf("dist %d\n", dist);
-            if(dist < min_dist)
+            hash_tables[4][hash_index] = hash_tables[4][hash_index]->next;        
+        }
+        hash_tables[4][hash_index] = temp;
+        
+        // }
+        
+        // array of distances and items and sort them in ascending order
+        int s;
+        counter = i;
+        for(int i=0; i<counter - 1; i++)
+        {
+            for(int j=0; j<counter-i-1; j++)
             {
-                min_dist = dist;
-                nearest_neighbor = hash_tables[4][hash_index]->item;
+                if(k_min_dist[j] > k_min_dist[j + 1])
+                {
+                    s = k_min_dist[j];
+                    k_min_dist[j] = k_min_dist[j + 1];
+                    k_min_dist[j + 1] = s;
+                    s = k_nearest_neighbor[j];
+                    k_nearest_neighbor[j] = k_nearest_neighbor[j + 1];
+                    k_nearest_neighbor[j + 1] = s;
+                }
             }
         }
-        printf("\n");
+
+
+        if(min_dist != 10000)
+        {
+            // print query
+            printf("\nQuery: %d\n", q[m][0]);
+
+            // print nearest neighbor
+            printf("Nearest neighbor-1: %d\n", nearest_neighbor);
+
+            // print LSH distance
+            printf("distanceLSH: %d\n", min_dist);
+
+            // print true distance
+            int true_min_dist = 10000;
+            for(int i=0; i<input_items_counter; i++)
+            {
+                int dist = 0;
+                for(int d=1; d<=dimension; d++)
+                {
+                    dist = dist + pow((q[m][d] - p[i][d]), 2);
+                }
+                dist = sqrt(dist);
+                printf("dist %d\n", dist);
+                if(dist < true_min_dist && dist >= 0) // minimun LSH distance
+                {
+                    true_min_dist = dist;
+                }
+            }
+            printf("distanceTrue: %d\n", true_min_dist);
+            printf("%f\n", (double)true_min_dist/min_dist);
+
+            // print k nearest neighbors and distances
+            for(int i=0; i<counter; i++)
+            {
+                printf("Nearest neighbor-%d: %d\n", i+1, k_nearest_neighbor[i]);
+                printf("distanceLSH: %d\n", k_min_dist[i]);
+                
+                // int true_true_min_dist = 10000;
+                // nearest_neighbor = -1;
+                // for(int i=0; i<input_items_counter; i++)
+                // {
+                //     int dist = 0;
+                //     for(int d=1; d<=dimension; d++)
+                //     {
+                //         dist = dist + pow((q[m][d] - p[i][d]), 2);
+                //     }
+                //     dist = sqrt(dist);
+                //     if(dist < true_min_dist) // minimun LSH distance
+                //     {
+                //         true_min_dist = dist;
+                //         nearest_neighbor = p[i][0];
+                //     }
+                // }
+                printf("distanceTrue: %d\n", true_min_dist);
+                printf("%f\n", (double)true_min_dist/k_min_dist[i]);
+                if(i == (N - 1))
+                    break;
+            }
+
+            // print the vectors within radius R
+            counter = j;
+            printf("%d-near neighbors:\n", R);
+            for(int i=0; i<counter; i++)
+            {
+                printf("%d\n", radius[i]);
+            }
+        }
+        else
+        {
+            printf("\nQuery: %d\n", q[m][0]);
+            printf("There is not a near vector in this bucket!\n");
+        }
+
+
+
     }
-    hash_tables[4][hash_index] = temp;
-
-    if(min_dist != -1)
-        printf("Nearest neighbor is %d with distance from query %d\n", nearest_neighbor, min_dist);
-    else
-        printf("There is no vector in this bucket!\n");
-
-    // }
 
 
 
 
 
 
-
-
-
-    // // Hash table for query file
-    // int g_for_q[query_items_counter];
-    // // TableSize = query_items_counter / 4;
-    // TableSize = 3;
-    // M = (int)pow(2, 32) - 5;
-    // for(int i=0; i<query_items_counter; i++)
-    // {
-    //     printf("Line %d\n", i);
-    //     g_for_q[i] = 0;
-    //     for(int j=0; j<k; j++)
-    //     {
-    //         int r = (rand() % 10);
-    //         g_for_q[i] = g_for_q[i] + (int)h_q_result[i][j] * r;
-    //     }
-    //     g_for_q[i] = ((g_for_q[i] % M) + M) % M;    // mod M
-    //     g_for_q[i] = ((g_for_q[i] % TableSize) + TableSize) % TableSize;    // mod TableSize
-    //     // printf("%d\n", g_for_q[i]);
-    // }
 
 
 
