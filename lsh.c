@@ -320,7 +320,6 @@ int main(int argc, char* argv[])
                     dist = dist + pow((q[m][d] - p[i][d]), 2);
                 }
                 dist = sqrt(dist);
-                printf("dist %d\n", dist);
                 if(dist < true_min_dist && dist >= 0) // minimun LSH distance
                 {
                     true_min_dist = dist;
