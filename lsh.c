@@ -3,6 +3,8 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <sys/time.h>
+
 
 int dimension;
 
@@ -106,9 +108,6 @@ int main(int argc, char* argv[])
             j = 0;
         }
     }
-    // for(int i=0; i<input_items_counter; i++)
-    //     for(int j=0; j<dimension; j++)
-    //         printf("%d\n", p[i][j]);  // allocate memory for the array
 
     int k = 4;
     float h_p_result[input_items_counter][k]; // array with the results of the h function
@@ -135,9 +134,6 @@ int main(int argc, char* argv[])
             j = 0;
         }
     }
-    // for(int i=0; i<query_items_counter; i++)
-    //     for(int j=0; j<dimension; j++)
-    //         printf("%d\n", q[i][j]);  // allocate memory for the array
 
     float h_q_result[query_items_counter][k]; // array with the results of the h function
     for(int i=0; i<query_items_counter; i++)
@@ -155,28 +151,28 @@ int main(int argc, char* argv[])
     int TableSize = input_items_counter / 8;
     int M = (int)pow(2, 32) - 5;
     int L = 5;
-    struct Hash_Node* hash_tables[L][input_items_counter + query_items_counter];
+    struct Hash_Node* hash_tables[L][input_items_counter];
     for(int n=0; n<L; n++)
     {
-        for(int i=0; i<(input_items_counter + query_items_counter); i++)
+        for(int i=0; i<(input_items_counter); i++)
         {
             hash_tables[n][i] = NULL;
         }
     }
-    int r[k];
+    int r[L][k];
     int ID;
     for(int n=0; n<L; n++)
     {
         for(int i=0; i<k; i++)
         {
-            r[i] = rand() % 10;
+            r[n][i] = rand() % 10;
         }
         for(int i=0; i<input_items_counter; i++)
         {
             hash_index = 0;
             for(int j=0; j<k; j++)
             {
-                hash_index = hash_index + (int)h_p_result[i][j] * r[j];
+                hash_index = hash_index + (int)h_p_result[i][j] * r[n][j];
             }
             hash_index = hash_index % M;    // mod M
             if(hash_index < 0)
@@ -208,110 +204,106 @@ int main(int argc, char* argv[])
         }
     }
 
-    // for(int i=0; i<L; i++)   // an thelw na vriskw to dianysma se kathe hash prepei na kanw disdiastato to r
-    // {
-
-    struct Hash_Node* temp;
-    for(int m=0; m<query_items_counter; m++)    // for every query show the results
+    for(int g=0; g<L; g++)   // an thelw na vriskw to dianysma se kathe hash prepei na kanw disdiastato to r
     {
-        hash_index = 0;
-        for(int j=0; j<k; j++)
+        struct Hash_Node* temp;
+        for(int m=0; m<query_items_counter; m++)    // for every query show the results
         {
-            hash_index = hash_index + (int)h_q_result[m][j] * r[j]; // find the bucket of the query
-        }
-        hash_index = hash_index % M;    // mod M
-        if(hash_index < 0)
-        {
-            hash_index = hash_index * (-1);
-        }
-        int k_ID = hash_index;  // ID for comparison
-        hash_index = hash_index % TableSize;    // mod TableSize
-
-        int min_dist = 10000;
-        int nearest_neighbor = -1;
-        temp = hash_tables[4][hash_index];
-        int counter = 0;
-        while(hash_tables[4][hash_index] != NULL)   // count the list
-        {
-            counter++;
-            hash_tables[4][hash_index] = hash_tables[4][hash_index]->next;
-        }
-
-        int N = 2;
-        int R = 10000;
-        int k_min_dist[counter];    // array of the distances
-        int k_nearest_neighbor[counter];    // array of the items
-        i = 0, j = 0;
-        hash_tables[4][hash_index] = temp;
-        int radius[counter];    // array for vectors within radius
-        while(hash_tables[4][hash_index] != NULL)
-        {
-            if(k_ID == hash_tables[4][hash_index]->ID)  // compare the IDs
+            hash_index = 0;
+            for(int j=0; j<k; j++)
             {
-                // calculate distance
-                int dist = 0;
-                for(int d=1; d<=dimension; d++)
-                {
-                    dist = dist + pow((q[0][d] - p[hash_tables[4][hash_index]->item - 1][d]), 2);
-                }
-                dist = sqrt(dist);
-                if(dist < min_dist) // minimun LSH distance
-                {
-                    min_dist = dist;
-                    nearest_neighbor = hash_tables[4][hash_index]->item;
-                }
+                hash_index = hash_index + (int)h_q_result[m][j] * r[g][j]; // find the bucket of the query
+            }
+            hash_index = hash_index % M;    // mod M
+            if(hash_index < 0)
+            {
+                hash_index = hash_index * (-1);
+            }
+            int k_ID = hash_index;  // ID for comparison
+            hash_index = hash_index % TableSize;    // mod TableSize
 
-                // k nearest neighbors
-                k_min_dist[i] = dist;
-                k_nearest_neighbor[i] = hash_tables[4][hash_index]->item;
-                i++;
+            int min_dist = 10000;
+            int nearest_neighbor = -1;
+            temp = hash_tables[g][hash_index];
+            int counter = 0;
+            while(hash_tables[g][hash_index] != NULL)   // count the list
+            {
+                counter++;
+                hash_tables[g][hash_index] = hash_tables[g][hash_index]->next;
+            }
 
-                // vectors in range r
-                if(dist < R)
+            hash_tables[g][hash_index] = temp;
+            int N = 5;
+            int R = 500;
+            int k_min_dist[counter];    // array of the distances
+            int k_nearest_neighbor[counter];    // array of the items
+            i = 0, j = 0;
+            int radius[counter];    // array for vectors within radius
+            struct timeval start, stop;
+            gettimeofday(&start, 0);
+            while(hash_tables[g][hash_index] != NULL)
+            {
+                if(k_ID == hash_tables[g][hash_index]->ID)  // compare the IDs
                 {
-                    radius[j] = hash_tables[4][hash_index]->item;
-                    j++;
+                    // calculate distance
+                    int dist = 0;
+                    for(int d=1; d<=dimension; d++)
+                    {
+                        dist = dist + pow((q[0][d] - p[hash_tables[g][hash_index]->item - 1][d]), 2);
+                    }
+                    dist = sqrt(dist);
+                    if(dist < min_dist) // minimun LSH distance
+                    {
+                        min_dist = dist;
+                        nearest_neighbor = hash_tables[g][hash_index]->item;
+                    }
+
+                    // k nearest neighbors
+                    k_min_dist[i] = dist;
+                    k_nearest_neighbor[i] = hash_tables[g][hash_index]->item;
+                    i++;
+
+                    // vectors in range r
+                    if(dist < R)
+                    {
+                        radius[j] = hash_tables[g][hash_index]->item;
+                        j++;
+                    }
+                }
+                hash_tables[g][hash_index] = hash_tables[g][hash_index]->next;        
+            }
+            gettimeofday(&stop, 0);
+            long sec = stop.tv_sec - start.tv_sec;
+            long mic_sec = stop.tv_usec - start.tv_usec;
+            double lsh_time = sec + mic_sec*1e-6;
+
+            // array of distances and items and sort them in ascending order
+            int s;
+            counter = i;
+            gettimeofday(&start, 0);
+            for(int i=0; i<counter - 1; i++)
+            {
+                for(int j=0; j<counter-i-1; j++)
+                {
+                    if(k_min_dist[j] > k_min_dist[j + 1])
+                    {
+                        s = k_min_dist[j];
+                        k_min_dist[j] = k_min_dist[j + 1];
+                        k_min_dist[j + 1] = s;
+                        s = k_nearest_neighbor[j];
+                        k_nearest_neighbor[j] = k_nearest_neighbor[j + 1];
+                        k_nearest_neighbor[j + 1] = s;
+                    }
                 }
             }
-            hash_tables[4][hash_index] = hash_tables[4][hash_index]->next;        
-        }
-        hash_tables[4][hash_index] = temp;
-        
-        // }
-        
-        // array of distances and items and sort them in ascending order
-        int s;
-        counter = i;
-        for(int i=0; i<counter - 1; i++)
-        {
-            for(int j=0; j<counter-i-1; j++)
-            {
-                if(k_min_dist[j] > k_min_dist[j + 1])
-                {
-                    s = k_min_dist[j];
-                    k_min_dist[j] = k_min_dist[j + 1];
-                    k_min_dist[j + 1] = s;
-                    s = k_nearest_neighbor[j];
-                    k_nearest_neighbor[j] = k_nearest_neighbor[j + 1];
-                    k_nearest_neighbor[j + 1] = s;
-                }
-            }
-        }
+            gettimeofday(&stop, 0);
+            sec = stop.tv_sec - start.tv_sec;
+            mic_sec = stop.tv_usec - start.tv_usec;
+            double k_lsh_time = lsh_time + sec + mic_sec*1e-6;
 
-
-        if(min_dist != 10000)
-        {
-            // print query
-            printf("\nQuery: %d\n", q[m][0]);
-
-            // print nearest neighbor
-            printf("Nearest neighbor-1: %d\n", nearest_neighbor);
-
-            // print LSH distance
-            printf("distanceLSH: %d\n", min_dist);
-
-            // print true distance
+            // calculate true distance and time
             int true_min_dist = 10000;
+            gettimeofday(&start, 0);
             for(int i=0; i<input_items_counter; i++)
             {
                 int dist = 0;
@@ -325,53 +317,104 @@ int main(int argc, char* argv[])
                     true_min_dist = dist;
                 }
             }
-            printf("distanceTrue: %d\n", true_min_dist);
-            printf("%f\n", (double)true_min_dist/min_dist);
+            gettimeofday(&stop, 0);
+            sec = stop.tv_sec - start.tv_sec;
+            mic_sec = stop.tv_usec - start.tv_usec;
+            double true_time = sec + mic_sec*1e-6;
 
-            // print k nearest neighbors and distances
-            for(int i=0; i<counter; i++)
+
+            // true distance of k neighbors
+            int k_true_min_dist[input_items_counter];
+            gettimeofday(&start, 0);
+            for(int i=0; i<input_items_counter; i++)
             {
-                printf("Nearest neighbor-%d: %d\n", i+1, k_nearest_neighbor[i]);
-                printf("distanceLSH: %d\n", k_min_dist[i]);
+                int dist = 0;
+                for(int d=1; d<=dimension; d++)
+                {
+                    dist = dist + pow((q[m][d] - p[i][d]), 2);
+                }
+                dist = sqrt(dist);
+
+                // k nearest neighbors
+                k_true_min_dist[i] = dist;
+
+            }
+            gettimeofday(&stop, 0);
+            sec = stop.tv_sec - start.tv_sec;
+            mic_sec = stop.tv_usec - start.tv_usec;
+            double temp_true_k_time = sec + mic_sec*1e-6;
+
+
+            gettimeofday(&start, 0);
+            for(int i=0; i<counter - 1; i++)
+            {
+                for(int j=0; j<counter-i-1; j++)
+                {
+                    if(k_true_min_dist[j] > k_true_min_dist[j + 1])
+                    {
+                        s = k_true_min_dist[j];
+                        k_true_min_dist[j] = k_true_min_dist[j + 1];
+                        k_true_min_dist[j + 1] = s;
+                    }
+                }
+            }
+            gettimeofday(&stop, 0);
+            sec = stop.tv_sec - start.tv_sec;
+            mic_sec = stop.tv_usec - start.tv_usec;
+            double true_k_time = temp_true_k_time + sec + mic_sec*1e-6;
+
+            if(min_dist != 10000)
+            {
+                // print query
+                printf("\nQuery: %d\n", q[m][0]);
+
+                // print nearest neighbor
+                printf("Nearest neighbor-1: %d\n", nearest_neighbor);
+
+                // print LSH distance
+                printf("distanceLSH: %f\n", (double)min_dist);
+
+                // print true distance
+                printf("distanceTrue: %f\n", (double)true_min_dist);
+
+                // print the find time of the distance
+                printf("tLSH: %.7f\n", lsh_time);
+
+                // print the real find time of the distance
+                printf("tTrue: %.7f\n", true_time);
+
+
+                // print k nearest neighbors and distances
+                for(int i=0; i<counter; i++)
+                {
+                    printf("Nearest neighbor-%d: %d\n", i+1, k_nearest_neighbor[i]);
+                    printf("distanceLSH: %f\n", (double)k_min_dist[i]);
+                    printf("distanceTrue: %f\n", (double)k_true_min_dist[i]);
+                    if(i == (N - 1))
+                        break;
+                }
+
+                // print the find time of the distances from k neighbors
+                printf("tLSH: %.7f\n", k_lsh_time);
                 
-                // int true_true_min_dist = 10000;
-                // nearest_neighbor = -1;
-                // for(int i=0; i<input_items_counter; i++)
-                // {
-                //     int dist = 0;
-                //     for(int d=1; d<=dimension; d++)
-                //     {
-                //         dist = dist + pow((q[m][d] - p[i][d]), 2);
-                //     }
-                //     dist = sqrt(dist);
-                //     if(dist < true_min_dist) // minimun LSH distance
-                //     {
-                //         true_min_dist = dist;
-                //         nearest_neighbor = p[i][0];
-                //     }
-                // }
-                printf("distanceTrue: %d\n", true_min_dist);
-                printf("%f\n", (double)true_min_dist/k_min_dist[i]);
-                if(i == (N - 1))
-                    break;
-            }
+                // print the real find time of the distance
+                printf("tTrue: %.7f\n", true_k_time);
 
-            // print the vectors within radius R
-            counter = j;
-            printf("%d-near neighbors:\n", R);
-            for(int i=0; i<counter; i++)
+
+                // print the vectors within radius R
+                counter = j;
+                printf("R-near neighbors:\n");
+                for(int i=0; i<counter; i++)
+                {
+                    printf("%d\n", radius[i]);
+                }
+            }
+            else
             {
-                printf("%d\n", radius[i]);
+                printf("\nQuery: %d\n", q[m][0]);
+                printf("There is not a near vector in this bucket!\n");
             }
         }
-        else
-        {
-            printf("\nQuery: %d\n", q[m][0]);
-            printf("There is not a near vector in this bucket!\n");
-        }
-
-
-
     }
 
 
