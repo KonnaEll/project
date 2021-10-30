@@ -417,15 +417,6 @@ int main(int argc, char* argv[])
         }
     }
 
-
-
-
-
-
-
-
-
-
     fclose(query_file_ptr);
     fclose(input_file_ptr);
     return 0;
