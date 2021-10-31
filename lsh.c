@@ -54,45 +54,88 @@ struct Hash_Node
 
 int main(int argc, char* argv[])
 {
-    FILE *query_file_ptr;
-    query_file_ptr = fopen("query_small_id", "r");    // open query file
-    if(query_file_ptr == NULL)
+	// parameters check
+    char* input_file = malloc(sizeof(char*) + 1);
+    char* query_file = malloc(sizeof(char*) + 1);
+    int k;
+    int L;
+    char* output_file = malloc(sizeof(char*) + 1);
+    int N;
+    int R;
+	if(argc == 11)
+	{
+        for(int i=1; i<=9; i=i+2)
+        {
+            if(strcmp(argv[i], "-i") == 0)
+                input_file = argv[i+1];
+            else if(strcmp(argv[i], "-q") == 0)
+                query_file = argv[i+1];
+            else if(strcmp(argv[i], "-o") == 0)
+                output_file = argv[i+1];
+            else if(strcmp(argv[i], "-N") == 0)
+                N = atoi(argv[i+1]);
+            else if(strcmp(argv[i], "-R") == 0)
+                R = atoi(argv[i+1]);
+        }
+        k = 4;
+        L = 5;
+        N = 1;
+        R = 10000;
+	}
+    else if(argc == 15)
     {
-        perror("Error\n");
-        exit(1);
+        for(int i=1; i<=13; i=i+2)
+        {
+            if(strcmp(argv[i], "-i") == 0)
+                input_file = argv[i+1];
+            else if(strcmp(argv[i], "-q") == 0)
+                query_file = argv[i+1];
+            else if(strcmp(argv[i], "-k") == 0)
+                k = atoi(argv[i+1]);
+            else if(strcmp(argv[i], "-L") == 0)
+                L = atoi(argv[i+1]);
+            else if(strcmp(argv[i], "-o") == 0)
+                output_file = argv[i+1];
+            else if(strcmp(argv[i], "-N") == 0)
+                N = atoi(argv[i+1]);
+            else if(strcmp(argv[i], "-R") == 0)
+                R = atoi(argv[i+1]);
+        }
     }
+    else
+    {
+        printf("Give dataset path\n");
+        scanf("%s", input_file);
+        k = 4;
+        L = 5;
+        N = 1;
+        R = 10000;
+    }
+
+
     FILE *input_file_ptr;
-    input_file_ptr = fopen("input_small_id", "r");    // open input file
+    input_file_ptr = fopen(input_file, "r");    // open input file
     if(input_file_ptr == NULL)
     {
         perror("Error\n");
         exit(1);
     }
-
     char c;
-    int query_items_counter = 0;
-    for (c = getc(query_file_ptr); c != EOF; c = getc(query_file_ptr))  // count the items of the file query(axis x)
-    {
-        if (c == '\n')
-            query_items_counter = query_items_counter + 1;
-    }
     int input_items_counter = 0;
     for (c = getc(input_file_ptr); c != EOF; c = getc(input_file_ptr))  // count the items of the file input(axis x)
     {
         if (c == '\n')
             input_items_counter = input_items_counter + 1;
     }
-    
-    rewind(query_file_ptr);    
     rewind(input_file_ptr);
 
     dimension = 0;
-    while((c = fgetc(query_file_ptr)) != '\n')  // calculate the dimension of all the vectors. One vector is enough.
+    while((c = fgetc(input_file_ptr)) != '\n')  // calculate the dimension of all the vectors. One vector is enough.
     {
         if(c == ' ')
             dimension++;
     }
-    rewind(query_file_ptr);
+    rewind(input_file_ptr);
 
     // Work for input file
     int p[input_items_counter][dimension + 1];    // array of the items of dataset
@@ -109,7 +152,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    int k = 4;
     float h_p_result[input_items_counter][k]; // array with the results of the h function
     for(int i=0; i<input_items_counter; i++)
     {
@@ -120,37 +162,11 @@ int main(int argc, char* argv[])
         }
     }
 
-    // Same for query file
-    int q[query_items_counter][dimension + 1];    // array of the items of dataset
-    i = 0, j = 0;
-    char* y = malloc(sizeof(char*) + 1);
-    while(fscanf(query_file_ptr, "%s", y) != EOF)     // fill the array with the dataset
-    {
-        q[i][j] = atoi(y);
-        j++;
-        if(j == dimension)
-        {
-            i++;
-            j = 0;
-        }
-    }
-
-    float h_q_result[query_items_counter][k]; // array with the results of the h function
-    for(int i=0; i<query_items_counter; i++)
-    {
-        srand(time(0));
-        for(int j=0; j<k; j++)
-        {
-            h_q_result[i][j] = h_function(q, i);   // h_function
-        }
-    }
-
 
     // Hash table for input file
     int hash_index;
     int TableSize = input_items_counter / 8;
     int M = (int)pow(2, 32) - 5;
-    int L = 5;
     struct Hash_Node* hash_tables[L][input_items_counter];
     for(int n=0; n<L; n++)
     {
@@ -159,6 +175,7 @@ int main(int argc, char* argv[])
             hash_tables[n][i] = NULL;
         }
     }
+
     int r[L][k];
     int ID;
     for(int n=0; n<L; n++)
@@ -204,8 +221,66 @@ int main(int argc, char* argv[])
         }
     }
 
-    for(int g=0; g<L; g++)   // an thelw na vriskw to dianysma se kathe hash prepei na kanw disdiastato to r
+    if(argc != 11 && argc != 15)
     {
+        printf("Give query file\n");
+        scanf("%s", query_file);
+        printf("Give output file\n");
+        scanf("%s", output_file);
+    }
+
+    FILE *query_file_ptr;
+    query_file_ptr = fopen(query_file, "r");    // open query file
+    if(query_file_ptr == NULL)
+    {
+        perror("Error\n");
+        exit(1);
+    }
+
+    int query_items_counter = 0;
+    for (c = getc(query_file_ptr); c != EOF; c = getc(query_file_ptr))  // count the items of the file query(axis x)
+    {
+        if (c == '\n')
+            query_items_counter = query_items_counter + 1;
+    }
+    rewind(query_file_ptr);    
+
+    int q[query_items_counter][dimension + 1];    // array of the items of dataset
+    i = 0, j = 0;
+    char* y = malloc(sizeof(char*) + 1);
+    while(fscanf(query_file_ptr, "%s", y) != EOF)     // fill the array with the dataset
+    {
+        q[i][j] = atoi(y);
+        j++;
+        if(j == dimension)
+        {
+            i++;
+            j = 0;
+        }
+    }
+
+    float h_q_result[query_items_counter][k]; // array with the results of the h function
+    for(int i=0; i<query_items_counter; i++)
+    {
+        srand(time(0));
+        for(int j=0; j<k; j++)
+        {
+            h_q_result[i][j] = h_function(q, i);   // h_function
+        }
+    }
+
+    FILE *output_file_ptr;
+    output_file_ptr = fopen(output_file, "w");    // open output file
+    if(output_file_ptr == NULL)
+    {
+        perror("Error\n");
+        exit(1);
+    }
+
+    // find the neighbors of each query
+    for(int g=0; g<L; g++)
+    {
+        fprintf(output_file_ptr, "Hash Table no%d\n", g);
         struct Hash_Node* temp;
         for(int m=0; m<query_items_counter; m++)    // for every query show the results
         {
@@ -233,8 +308,6 @@ int main(int argc, char* argv[])
             }
 
             hash_tables[g][hash_index] = temp;
-            int N = 5;
-            int R = 500;
             int k_min_dist[counter];    // array of the distances
             int k_nearest_neighbor[counter];    // array of the items
             i = 0, j = 0;
@@ -366,58 +439,60 @@ int main(int argc, char* argv[])
             if(min_dist != 10000)
             {
                 // print query
-                printf("\nQuery: %d\n", q[m][0]);
+                fprintf(output_file_ptr, "Query: %d\n", q[m][0]);
 
                 // print nearest neighbor
-                printf("Nearest neighbor-1: %d\n", nearest_neighbor);
+                fprintf(output_file_ptr, "Nearest neighbor-1: %d\n", nearest_neighbor);
 
                 // print LSH distance
-                printf("distanceLSH: %f\n", (double)min_dist);
+                fprintf(output_file_ptr, "distanceLSH: %f\n", (double)min_dist);
 
                 // print true distance
-                printf("distanceTrue: %f\n", (double)true_min_dist);
+                fprintf(output_file_ptr, "distanceTrue: %f\n", (double)true_min_dist);
 
                 // print the find time of the distance
-                printf("tLSH: %.7f\n", lsh_time);
+                fprintf(output_file_ptr, "tLSH: %.7f\n", lsh_time);
 
                 // print the real find time of the distance
-                printf("tTrue: %.7f\n", true_time);
+                fprintf(output_file_ptr, "tTrue: %.7f\n", true_time);
 
 
                 // print k nearest neighbors and distances
                 for(int i=0; i<counter; i++)
                 {
-                    printf("Nearest neighbor-%d: %d\n", i+1, k_nearest_neighbor[i]);
-                    printf("distanceLSH: %f\n", (double)k_min_dist[i]);
-                    printf("distanceTrue: %f\n", (double)k_true_min_dist[i]);
+                    fprintf(output_file_ptr, "Nearest neighbor-%d: %d\n", i+1, k_nearest_neighbor[i]);
+                    fprintf(output_file_ptr, "distanceLSH: %f\n", (double)k_min_dist[i]);
+                    fprintf(output_file_ptr, "distanceTrue: %f\n", (double)k_true_min_dist[i]);
                     if(i == (N - 1))
                         break;
                 }
 
                 // print the find time of the distances from k neighbors
-                printf("tLSH: %.7f\n", k_lsh_time);
+                fprintf(output_file_ptr, "tLSH: %.7f\n", k_lsh_time);
                 
                 // print the real find time of the distance
-                printf("tTrue: %.7f\n", true_k_time);
+                fprintf(output_file_ptr, "tTrue: %.7f\n", true_k_time);
 
 
                 // print the vectors within radius R
                 counter = j;
-                printf("R-near neighbors:\n");
+                fprintf(output_file_ptr, "R-near neighbors:\n");
                 for(int i=0; i<counter; i++)
                 {
-                    printf("%d\n", radius[i]);
+                    fprintf(output_file_ptr, "%d\n", radius[i]);
                 }
             }
             else
             {
-                printf("\nQuery: %d\n", q[m][0]);
-                printf("There is not a near vector in this bucket!\n");
+                fprintf(output_file_ptr, "Query: %d\n", q[m][0]);
+                fprintf(output_file_ptr, "There is not a near vector in this bucket!\n");
             }
+            fprintf(output_file_ptr, "\n");
         }
     }
 
     fclose(query_file_ptr);
     fclose(input_file_ptr);
+    fclose(output_file_ptr);
     return 0;
 }
