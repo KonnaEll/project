@@ -4,20 +4,19 @@
 #include <time.h>
 #include <math.h>
 #include <sys/time.h>
+#include <limits.h>
 
-
-int dimension;
 
 float normal_distribution_number()     // random number that follows the normal distribution
 {
     float vect1 = (rand() / ((float)RAND_MAX + 1));
     float vect2 = (rand() / ((float)RAND_MAX + 1));
-    float number = sqrt(-2*log(vect1)) * cos(2*3.14*vect2);  // mean μ =0, variance σ^2 = 1
+    float number = sqrt(-2*log(vect1)) * cos(2*3.14*vect2);  // mean μ = 0, variance σ^2 = 1
 
     return number;
 }
 
-float vectors_dot_product(int p[0][dimension + 1], float v[], int index)   // dot product of two vectors
+float vectors_dot_product(int** p, float* v, int index, int dimension)   // dot product of two vectors
 {
     float product = 0.0;
     for(int i=0; i<dimension; i++)
@@ -27,15 +26,15 @@ float vectors_dot_product(int p[0][dimension + 1], float v[], int index)   // do
     return product;
 }
 
-float h_function(int p[0][dimension + 1], int index)     // calculation of h function
+float h_function(int** p, int index, int dimension)     // calculation of h function
 {
-    float v[dimension];
+    float* v = malloc(sizeof(float) * dimension);
     for(int i=0; i<dimension; i++)
     {
         v[i] = normal_distribution_number();    // find random v vector that follows the normal distribution
     }
 
-    float dot_result = vectors_dot_product(p, v, index);   // calculate the dot product of the to vectors
+    float dot_result = vectors_dot_product(p, v, index, dimension);   // calculate the dot product of the to vectors
     int w = 6;  // stable
     float t = (float)(rand() % 4);    // calculate t uniformly in range [0, w)
 
@@ -54,6 +53,8 @@ struct Hash_Node
 
 int main(int argc, char* argv[])
 {
+    while(1)
+    {
 	// parameters check
     char* input_file = malloc(sizeof(char*) + 1);
     char* query_file = malloc(sizeof(char*) + 1);
@@ -106,6 +107,7 @@ int main(int argc, char* argv[])
     {
         printf("Give dataset path\n");
         scanf("%s", input_file);
+        printf("%s\n", input_file);
         k = 4;
         L = 5;
         N = 1;
@@ -128,8 +130,7 @@ int main(int argc, char* argv[])
             input_items_counter = input_items_counter + 1;
     }
     rewind(input_file_ptr);
-
-    dimension = 0;
+    int dimension = 0;
     while((c = fgetc(input_file_ptr)) != '\n')  // calculate the dimension of all the vectors. One vector is enough.
     {
         if(c == ' ')
@@ -138,7 +139,9 @@ int main(int argc, char* argv[])
     rewind(input_file_ptr);
 
     // Work for input file
-    int p[input_items_counter][dimension + 1];    // array of the items of dataset
+    int** p = malloc(sizeof(int*) * input_items_counter);    // array of the items of dataset
+    for(int i=0; i<input_items_counter; i++)
+        p[i] = malloc(sizeof(int) * (dimension + 1));
     int i = 0, j = 0;
     char* x = malloc(sizeof(char*) + 1);
     while(fscanf(input_file_ptr, "%s", x) != EOF)     // fill the array with the dataset
@@ -151,32 +154,35 @@ int main(int argc, char* argv[])
             j = 0;
         }
     }
+    free(x);
 
-    float h_p_result[input_items_counter][k]; // array with the results of the h function
+    float** h_p_result = malloc(sizeof(float*) * input_items_counter); // array with the results of the h function
+    for(int i=0; i<input_items_counter; i++)
+        h_p_result[i] = malloc(sizeof(float) * k);
     for(int i=0; i<input_items_counter; i++)
     {
         srand(time(0));
         for(int j=0; j<k; j++)
         {
-            h_p_result[i][j] = h_function(p, i);   // h_function
+            h_p_result[i][j] = h_function(p, i, dimension);   // h_function
         }
     }
-
 
     // Hash table for input file
     int hash_index;
     int TableSize = input_items_counter / 8;
     int M = (int)pow(2, 32) - 5;
-    struct Hash_Node* hash_tables[L][input_items_counter];
+    struct Hash_Node* hash_tables[L][TableSize];
     for(int n=0; n<L; n++)
     {
-        for(int i=0; i<(input_items_counter); i++)
+        for(int i=0; i<(TableSize); i++)
         {
             hash_tables[n][i] = NULL;
         }
     }
-
-    int r[L][k];
+    int** r = malloc(sizeof(int*) * L);
+    for(int i=0; i<L; i++)
+        r[i] = malloc(sizeof(int) * k);
     int ID;
     for(int n=0; n<L; n++)
     {
@@ -220,7 +226,7 @@ int main(int argc, char* argv[])
             }
         }
     }
-
+    printf("rty\n");
     if(argc != 11 && argc != 15)
     {
         printf("Give query file\n");
@@ -228,6 +234,7 @@ int main(int argc, char* argv[])
         printf("Give output file\n");
         scanf("%s", output_file);
     }
+printf("th\n");
 
     FILE *query_file_ptr;
     query_file_ptr = fopen(query_file, "r");    // open query file
@@ -236,6 +243,7 @@ int main(int argc, char* argv[])
         perror("Error\n");
         exit(1);
     }
+printf("th2\n");
 
     int query_items_counter = 0;
     for (c = getc(query_file_ptr); c != EOF; c = getc(query_file_ptr))  // count the items of the file query(axis x)
@@ -243,9 +251,12 @@ int main(int argc, char* argv[])
         if (c == '\n')
             query_items_counter = query_items_counter + 1;
     }
-    rewind(query_file_ptr);    
+    rewind(query_file_ptr);
+printf("th3\n");
 
-    int q[query_items_counter][dimension + 1];    // array of the items of dataset
+    int** q = malloc(sizeof(int*) * query_items_counter);    // array of the items of dataset
+    for(int i=0; i<query_items_counter; i++)
+        q[i] = malloc(sizeof(int) * (dimension + 1));
     i = 0, j = 0;
     char* y = malloc(sizeof(char*) + 1);
     while(fscanf(query_file_ptr, "%s", y) != EOF)     // fill the array with the dataset
@@ -258,16 +269,21 @@ int main(int argc, char* argv[])
             j = 0;
         }
     }
+    free(y);
+printf("th5\n");
 
-    float h_q_result[query_items_counter][k]; // array with the results of the h function
+    float** h_q_result = malloc(sizeof(float*) * query_items_counter); // array with the results of the h function
+    for(int i=0; i<query_items_counter; i++)
+        h_q_result[i] = malloc(sizeof(float) * k);
     for(int i=0; i<query_items_counter; i++)
     {
         srand(time(0));
         for(int j=0; j<k; j++)
         {
-            h_q_result[i][j] = h_function(q, i);   // h_function
+            h_q_result[i][j] = h_function(q, i, dimension);   // h_function
         }
     }
+printf("th6\n");
 
     FILE *output_file_ptr;
     output_file_ptr = fopen(output_file, "w");    // open output file
@@ -276,6 +292,7 @@ int main(int argc, char* argv[])
         perror("Error\n");
         exit(1);
     }
+printf("th7\n");
 
     // find the neighbors of each query
     for(int g=0; g<L; g++)
@@ -297,7 +314,7 @@ int main(int argc, char* argv[])
             int k_ID = hash_index;  // ID for comparison
             hash_index = hash_index % TableSize;    // mod TableSize
 
-            int min_dist = 10000;
+            int min_dist = INT_MAX;
             int nearest_neighbor = -1;
             temp = hash_tables[g][hash_index];
             int counter = 0;
@@ -375,7 +392,7 @@ int main(int argc, char* argv[])
             double k_lsh_time = lsh_time + sec + mic_sec*1e-6;
 
             // calculate true distance and time
-            int true_min_dist = 10000;
+            int true_min_dist = INT_MAX;
             gettimeofday(&start, 0);
             for(int i=0; i<input_items_counter; i++)
             {
@@ -436,7 +453,7 @@ int main(int argc, char* argv[])
             mic_sec = stop.tv_usec - start.tv_usec;
             double true_k_time = temp_true_k_time + sec + mic_sec*1e-6;
 
-            if(min_dist != 10000)
+            if(min_dist != INT_MAX)
             {
                 // print query
                 fprintf(output_file_ptr, "Query: %d\n", q[m][0]);
@@ -491,8 +508,72 @@ int main(int argc, char* argv[])
         }
     }
 
+
     fclose(query_file_ptr);
     fclose(input_file_ptr);
     fclose(output_file_ptr);
+
+    if(argc != 11 && argc != 15)
+    {
+        free(input_file);
+        free(query_file);
+        free(output_file);
+    }
+
+    free(p);
+    for(int i=0; i<input_items_counter; i++)
+    {
+        free(p[i]);
+    }
+
+    // free(h_p_result);
+    // for(int i=0; i<input_items_counter; i++)
+    // {
+    //     free(h_p_result[i]);
+    // }
+
+    free(q);
+    for(int i=0; i<query_items_counter; i++)
+    {
+        free(q[i]);
+    }
+
+    // free(h_q_result);
+    // for(int i=0; i<query_items_counter; i++)
+    // {
+    //     free(h_q_result[i]);
+    // }
+
+    // free(r);
+    // for(int i=0; i<L; i++)
+    // {
+    //     free(r[i]);
+    // }
+
+
+
+    printf("~If you want to terminate the program press 'STOP'\n");
+    printf("~If you want to continue the program press 'AGAIN'\n");
+    char* response = malloc(sizeof(char*) + 1);
+    scanf("%s", response);
+    if(strcmp(response, "STOP") == 0)
+        break;
+    else if(strcmp(response, "AGAIN") == 0)
+    {
+        rewind(input_file_ptr);
+        rewind(query_file_ptr);
+        argc = 0;
+        continue;
+    }
+    else
+    {
+        printf("Wrong input. Can't continue!\n");
+        break;
+    }
+
+
+
+    }
+
     return 0;
 }
