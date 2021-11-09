@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,8 +19,7 @@ int main(int argc, char* argv[])
     char* output_file = malloc(sizeof(char*) + 1);
     int N;
     int R;
-    // while(1)
-    // {
+
 	if(argc == 11)
 	{
         for(int i=1; i<=9; i=i+2)
