@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
     char* configuration_file = malloc(sizeof(char*) + 1);
     char* output_file = malloc(sizeof(char*) + 1);
     char* method = malloc(sizeof(char*) + 1);
-    int complete;
+    int complete = 0;
 	if(argc == 9)
 	{
         for(int i=1; i<=7; i=i+2)
@@ -364,7 +364,7 @@ int main(int argc, char* argv[])
 
         // Hash table for input file
         int hash_index;
-        int TableSize = input_items_counter / 8;
+        int TableSize = input_items_counter / 6;
         int M = (int)pow(2, 32) - 5;
         struct Hash_Node* hash_tables[number_of_vector_hash_tables][TableSize];
         for(int n=0; n<number_of_vector_hash_tables; n++)
@@ -374,23 +374,47 @@ int main(int argc, char* argv[])
                 hash_tables[n][i] = NULL;
             }
         }
-        // int** r = malloc(sizeof(int*) * number_of_vector_hash_tables);
-        // for(int i=0; i<number_of_vector_hash_tables; i++)
-        //     r[i] = malloc(sizeof(int) * number_of_vector_hash_functions);
+        int** initial_centroid = malloc(sizeof(int*) * number_of_clusters);
+        for(int i=0; i<number_of_clusters; i++)
+        {
+            initial_centroid[i] = malloc(sizeof(int) * (dimension + 1));
+        }
+        for(int i=0; i<number_of_clusters; i++)
+        {
+            for(int z=1; z<dimension; z++)
+            {
+                initial_centroid[i][z] = centroid_index[i][z];
+            }
+        }
         int r[number_of_vector_hash_tables][number_of_vector_hash_functions];
         int ID;
-        for(int n=0; n<number_of_vector_hash_tables; n++)
+        for(int g=0; g<number_of_vector_hash_tables; g++)
         {
+            // me ta sxolia vriskei diaforetika gt pairnei to teleutaio tou 3ou cluster sto kainourgio hash
+            // xwris sxolia einai ola ta idia
+
+
+            // for(int i=0; i<number_of_clusters; i++)
+            // {
+            //     for(int z=1; z<dimension; z++)
+            //     {
+            //         centroid_index[i][z] = initial_centroid[i][z];
+            //     }
+            // }
+            
+
+            struct timeval start, stop;
+            gettimeofday(&start, 0);
             for(int i=0; i<number_of_vector_hash_functions; i++)
             {
-                r[n][i] = rand() % 10;
+                r[g][i] = rand() % 10;
             }
             for(int i=0; i<input_items_counter; i++)
             {
                 hash_index = 0;
                 for(int j=0; j<number_of_vector_hash_functions; j++)
                 {
-                    hash_index = hash_index + (int)h_p_result[i][j] * r[n][j];
+                    hash_index = hash_index + (int)h_p_result[i][j] * r[g][j];
                 }
                 hash_index = hash_index % M;    // mod M
                 if(hash_index < 0)
@@ -403,30 +427,24 @@ int main(int argc, char* argv[])
                 struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));
                 data_item->item = i + 1;
                 data_item->ID = ID;
-                if(hash_tables[n][hash_index] == NULL)
+                if(hash_tables[g][hash_index] == NULL)
                 {
-                    hash_tables[n][hash_index] = data_item;
-                    hash_tables[n][hash_index]->ID = ID;
+                    hash_tables[g][hash_index] = data_item;
+                    hash_tables[g][hash_index]->ID = ID;
                 }
                 else
                 {
-                    struct Hash_Node* temp = hash_tables[n][hash_index];
-                    while(hash_tables[n][hash_index]->next != NULL)
+                    struct Hash_Node* temp = hash_tables[g][hash_index];
+                    while(hash_tables[g][hash_index]->next != NULL)
                     {
-                        hash_tables[n][hash_index] = hash_tables[n][hash_index]->next;
+                        hash_tables[g][hash_index] = hash_tables[g][hash_index]->next;
                     }
-                    hash_tables[n][hash_index]->next = data_item;
-                    hash_tables[n][hash_index]->next->ID = ID;
-                    hash_tables[n][hash_index] = temp;
+                    hash_tables[g][hash_index]->next = data_item;
+                    hash_tables[g][hash_index]->next->ID = ID;
+                    hash_tables[g][hash_index] = temp;
                 }
             }
-        }
 
-
-
-
-        // for(int g=0; g<number_of_vector_hash_tables; g++)
-        // {
             int** previous_centroid_index = malloc(sizeof(int*) * number_of_clusters);
             for(int i=0; i<number_of_clusters; i++)
             {
@@ -441,69 +459,61 @@ int main(int argc, char* argv[])
             }
 
             
-        int** radius = malloc(sizeof(int*) * number_of_clusters);    // array for vectors within radius
-        for(int i=0; i<number_of_clusters; i++)
-            radius[i] = malloc(sizeof(int) * input_items_counter);
-        for(int i=0; i<number_of_clusters; i++)
-            for(int j=0; j<input_items_counter; j++)
-                radius[i][j] = -1;
-
-        int j[number_of_clusters];
-        int j_temp[number_of_clusters];
-        for(int i=0; i<number_of_clusters; i++)
-        {
-            j[i] = 0;
-            j_temp[i] = -1;
-        }
-        while(1)
-        {
-            float** h_q_result = malloc(sizeof(float*) * number_of_clusters); // array with the results of the h function
+            int** radius = malloc(sizeof(int*) * number_of_clusters);    // array for vectors within radius
             for(int i=0; i<number_of_clusters; i++)
-                h_q_result[i] = malloc(sizeof(float) * number_of_vector_hash_functions);
+                radius[i] = malloc(sizeof(int) * input_items_counter);
+            for(int i=0; i<number_of_clusters; i++)
+                for(int j=0; j<input_items_counter; j++)
+                    radius[i][j] = -1;
+
+            int j[number_of_clusters];
+            int j_temp[number_of_clusters];
             for(int i=0; i<number_of_clusters; i++)
             {
-                srand(time(0));
-                for(int j=0; j<number_of_vector_hash_functions; j++)
-                {
-                    h_q_result[i][j] = h_function(centroid_index, i, dimension);   // h_function
-                }
+                j[i] = 0;
+                j_temp[i] = -1;
             }
-
-            int min = INT_MAX;
-            int dist;
-            for(int i=0; i<number_of_clusters; i++)     // find first radius (minimum distance among all centroids)
+            while(1)
             {
-                for(int j=0; j<number_of_clusters; j++)
+                float** h_q_result = malloc(sizeof(float*) * number_of_clusters); // array with the results of the h function
+                for(int i=0; i<number_of_clusters; i++)
+                    h_q_result[i] = malloc(sizeof(float) * number_of_vector_hash_functions);
+                for(int i=0; i<number_of_clusters; i++)
                 {
-                    if(i != j)
+                    srand(time(0));
+                    for(int j=0; j<number_of_vector_hash_functions; j++)
                     {
-                        dist = 0;
-                        for(int d=1; d<=dimension; d++)
+                        h_q_result[i][j] = h_function(centroid_index, i, dimension);   // h_function
+                    }
+                }
+
+                int min = INT_MAX;
+                int dist;
+                for(int i=0; i<number_of_clusters; i++)     // find first radius (minimum distance among all centroids)
+                {
+                    for(int j=0; j<number_of_clusters; j++)
+                    {
+                        if(i != j)
                         {
-                            dist = dist + pow((centroid_index[i][d] - centroid_index[j][d]), 2);
-                        }
-                        dist = sqrt(dist);
-                        if(dist < min)
-                        {
-                            min = dist;
+                            dist = 0;
+                            for(int d=1; d<=dimension; d++)
+                            {
+                                dist = dist + pow((centroid_index[i][d] - centroid_index[j][d]), 2);
+                            }
+                            dist = sqrt(dist);
+                            if(dist < min)
+                            {
+                                min = dist;
+                            }
                         }
                     }
                 }
-            }
-            int R = min / 2;
-            printf("R %d\n", R);
+                int R = min / 2;
 
+                int q_hash_index[number_of_clusters];
+                int k_ID[number_of_clusters];
 
-            int q_hash_index[number_of_clusters];
-            int k_ID[number_of_clusters];
-
-            struct Hash_Node* temp[number_of_vector_hash_tables][TableSize];
-            // for(int g=0; g<number_of_vector_hash_tables; g++)
-            // {
-                int g = 0;
-
-                // fprintf(output_file_ptr, "Hash Table no%d\n", g);
-
+                struct Hash_Node* temp[number_of_vector_hash_tables][TableSize];
                 for(int m=0; m<number_of_clusters; m++)    // for every query show the results
                 {
                     q_hash_index[m] = 0;
@@ -518,7 +528,6 @@ int main(int argc, char* argv[])
                     }
                     k_ID[m] = q_hash_index[m];  // ID for comparison
                     q_hash_index[m] = q_hash_index[m] % TableSize;    // mod TableSize
-                    printf("qqqqq %d %d\n",m, q_hash_index[m]);
                 }
                 int count[number_of_clusters];
                 for(int m=0; m<number_of_clusters; m++)
@@ -529,8 +538,6 @@ int main(int argc, char* argv[])
                     for(int m=0; m<number_of_clusters; m++)    // for every query show the results
                     {
                         temp[g][m] = hash_tables[g][q_hash_index[m]];
-                        // struct timeval start, stop;
-                        // gettimeofday(&start, 0);
                         while(hash_tables[g][q_hash_index[m]] != NULL)
                         {
                             if(k_ID[m] == hash_tables[g][q_hash_index[m]]->ID)  // compare the IDs
@@ -546,7 +553,6 @@ int main(int argc, char* argv[])
                                 // vectors in range r
                                 if(dist < R)
                                 {
-                                    printf("i %d\n", m);
                                     int j_dist = j[m];
                                     int flag = 0;
                                     for(int i=0; i<=j_dist; i++)
@@ -593,10 +599,6 @@ int main(int argc, char* argv[])
                             hash_tables[g][q_hash_index[m]] = hash_tables[g][q_hash_index[m]]->next;
                         }
                         hash_tables[g][q_hash_index[m]] = temp[g][m];
-                        //     gettimeofday(&stop, 0);
-                        //     long sec = stop.tv_sec - start.tv_sec;
-                        //     long mic_sec = stop.tv_usec - start.tv_usec;
-                        //     double lsh_time = sec + mic_sec*1e-6;
                         if(j_temp[m] == j[m])
                         {
                             count[m]++;
@@ -613,7 +615,6 @@ int main(int argc, char* argv[])
                     if(cntr > 0)
                         break;
                     R = R * 2;
-                    printf("R2 %d\n", R);
                 }
                 for(int i=0; i<number_of_clusters; i++)
                 {
@@ -621,27 +622,8 @@ int main(int argc, char* argv[])
                     {
                         if(radius[i][j] == -1)
                             continue;
-                        printf("a%d ", radius[i][j]);
                     }
                 }
-                printf("\n\n");
-
-                for(int i=0; i<number_of_clusters;i++)
-                {
-                    printf("%d\n", j[i]);
-                }
-
-
-                // for(int m=0; m<number_of_clusters; m++)
-                // {
-                //     fprintf(output_file_ptr, "CLUSTER-%d ", m+1);
-                //     fprintf(output_file_ptr, "(centroid: ");
-                //     for(int i=0; i<dimension; i++)
-                //         fprintf(output_file_ptr, "%d ", centroid_index[m][i]);
-                //     fprintf(output_file_ptr, ")\n\n");
-                // }
-
-
 
                 // Fix the new centroids
                 int sum;
@@ -653,15 +635,11 @@ int main(int argc, char* argv[])
                         sum = 0;
                         for(int k=0; k<j[i]; k++)
                         {
-                            // printf("a%d %d ",k, radius[i][k]);
-                            // printf("laaaa%d\n", p[radius[i][k] - 1][z]);
                             sum = sum + p[radius[i][k] - 1][z];
                         }
-                        // printf("%d ", sum);
                         if(j[i] > 0)
                             centroid_index[i][z] = sum / j[i];
                     }
-                    printf("\n\n");
                 }
 
                 int counter = 0;
@@ -675,30 +653,76 @@ int main(int argc, char* argv[])
                         }
                         previous_centroid_index[i][z] = centroid_index[i][z];
                     }
-                    printf("\n\n");
                 }
-                // for(int i=0; i<number_of_clusters;i++)
-                // {
-                //     for(int j=0; j<dimension; j++)
-                //         printf("%d ", centroid_index[i][j]);
-                //     printf("\n\n\n");
-                // }
-                printf("\n\nppppp\n\n");
+
                 if(counter == 0)
                 {
                     printf("THE END\n");
                     break;
                 }
+            }
+
+            int count = 0;
+            int min = -1;
+            for(int k=0; k<input_items_counter; k++)
+            {
+                for(int m=0; m<number_of_clusters; m++)
+                {
+                    for(int i=0; i<j[m]; i++)
+                    {
+                        if(p[k][0] == radius[m][i])
+                            count++;
+                    }
+                }
+                if(count == 0)
+                {
+                    min = min_distance_index(p, k, centroid_index, number_of_clusters, dimension);
+                    radius[min][j[min] + 1] = p[k][0];
+                    j[min]++;
+                }
+            }
+
+            // clustering time
+            gettimeofday(&stop, 0);
+            long sec = stop.tv_sec - start.tv_sec;
+            long mic_sec = stop.tv_usec - start.tv_usec;
+            double clustering_time = sec + mic_sec*1e-6;
+
+            if(complete == 0)
+            {
+                for(int m=0; m<number_of_clusters; m++)
+                {
+                    fprintf(output_file_ptr, "CLUSTER-%d ", m+1);
+                    fprintf(output_file_ptr, "(centroid: ");
+                    for(int i=0; i<dimension; i++)
+                        fprintf(output_file_ptr, "%d ", centroid_index[m][i]);
+                    fprintf(output_file_ptr, ")\n\n");
+                }
+                fprintf(output_file_ptr, "clustering time: %f\n\n", clustering_time);
+            }
+            else
+            {
+                for(int m=0; m<number_of_clusters; m++)
+                {
+                    fprintf(output_file_ptr, "CLUSTER-%d ", m+1);
+                    fprintf(output_file_ptr, "(centroid: ");
+                    for(int i=0; i<dimension; i++)
+                        fprintf(output_file_ptr, "%d ", centroid_index[m][i]);
+                    for(int i=0; i<j[m]; i++)
+                        fprintf(output_file_ptr, ", %d", radius[m][i]);
+                    fprintf(output_file_ptr, ")\n\n");
+                }
+            }
         }
-        
-        for(int i=0; i<number_of_clusters;i++)
-        {
-            for(int j=0; j<dimension; j++)
-                printf("%d ", centroid_index[i][j]);
-            printf("\n\n\n");
-        }
-        // }
     }
+
+
+
+
+
+
+
+
 
 
     return 0;
