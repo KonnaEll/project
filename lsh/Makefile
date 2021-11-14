@@ -8,5 +8,5 @@ lsh_funcs.o: lsh_funcs.c lsh_funcs.h
 	gcc -Wall -Werror -std=c9x -c lsh_funcs.c
 
 clean:
-	rm -f lsh *.o
+	rm -f lsh *.o lsh
 

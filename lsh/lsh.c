@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,8 +18,7 @@ int main(int argc, char* argv[])
     char* output_file = malloc(sizeof(char*) + 1);
     int N;
     int R;
-
-	if(argc == 11)
+	if(argc == 11)  // if not all the parameters are given then use default
 	{
         for(int i=1; i<=9; i=i+2)
         {
@@ -60,7 +58,7 @@ int main(int argc, char* argv[])
                 R = atoi(argv[i+1]);
         }
     }
-    else
+    else    // non parameters are given so ask for files
     {
         printf("Give dataset path\n");
         scanf("%s", input_file);
@@ -111,10 +109,9 @@ int main(int argc, char* argv[])
         }
     }
 
-    // float** h_p_result = malloc(sizeof(float*) * input_items_counter); // array with the results of the h function
-    // for(int i=0; i<input_items_counter; i++)
-    //     h_p_result[i] = malloc(sizeof(float) * k);
-    float h_p_result[input_items_counter][k];
+    float** h_p_result = malloc(sizeof(float*) * input_items_counter); // array with the results of the h function
+    for(int i=0; i<input_items_counter; i++)
+        h_p_result[i] = malloc(sizeof(float) * k);
     for(int i=0; i<input_items_counter; i++)
     {
         srand(time(0));
@@ -143,14 +140,14 @@ int main(int argc, char* argv[])
     {
         for(int i=0; i<k; i++)
         {
-            r[n][i] = rand() % 10;
+            r[n][i] = rand() % 10;  // r for g function
         }
         for(int i=0; i<input_items_counter; i++)
         {
             hash_index = 0;
             for(int j=0; j<k; j++)
             {
-                hash_index = hash_index + (int)h_p_result[i][j] * r[n][j];
+                hash_index = hash_index + (int)h_p_result[i][j] * r[n][j];  // g function
             }
             hash_index = hash_index % M;    // mod M
             if(hash_index < 0)
@@ -160,15 +157,15 @@ int main(int argc, char* argv[])
             ID = hash_index;
             hash_index = hash_index % TableSize;    // mod TableSize
 
-            struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));
-            data_item->item = i + 1;
+            struct Hash_Node* data_item = (struct Hash_Node*)malloc(sizeof(struct Hash_Node));  // new node
+            data_item->item = i + 1;    // fill it
             data_item->ID = ID;
-            if(hash_tables[n][hash_index] == NULL)
+            if(hash_tables[n][hash_index] == NULL)  // put it in the list if list is empty
             {
                 hash_tables[n][hash_index] = data_item;
                 hash_tables[n][hash_index]->ID = ID;
             }
-            else
+            else    // put it after the last node of the list
             {
                 struct Hash_Node* temp = hash_tables[n][hash_index];
                 while(hash_tables[n][hash_index]->next != NULL)
@@ -181,7 +178,7 @@ int main(int argc, char* argv[])
             }
         }
     }
-    if(argc != 11 && argc != 15)
+    if(argc != 11 && argc != 15)    // only if non parameters are given
     {
         printf("Give query file\n");
         scanf("%s", query_file);
@@ -221,10 +218,9 @@ int main(int argc, char* argv[])
         }
     }
 
-    // float** h_q_result = malloc(sizeof(float*) * query_items_counter); // array with the results of the h function
-    // for(int i=0; i<query_items_counter; i++)
-    //     h_q_result[i] = malloc(sizeof(float) * k);
-    float h_q_result[query_items_counter][k];
+    float** h_q_result = malloc(sizeof(float*) * query_items_counter); // array with the results of the h function
+    for(int i=0; i<query_items_counter; i++)
+        h_q_result[i] = malloc(sizeof(float) * k);
     for(int i=0; i<query_items_counter; i++)
     {
         srand(time(0));
@@ -252,7 +248,7 @@ int main(int argc, char* argv[])
             hash_index = 0;
             for(int j=0; j<k; j++)
             {
-                hash_index = hash_index + (int)h_q_result[m][j] * r[g][j]; // find the bucket of the query
+                hash_index = hash_index + (int)h_q_result[m][j] * r[g][j]; // find the bucket of the query (g function)
             }
             hash_index = hash_index % M;    // mod M
             if(hash_index < 0)
@@ -287,7 +283,7 @@ int main(int argc, char* argv[])
                     int dist = 0;
                     for(int d=1; d<=dimension; d++)
                     {
-                        dist = dist + pow((q[m][d] - p[hash_tables[g][hash_index]->item - 1][d]), 2);
+                        dist = dist + pow((q[m][d] - p[hash_tables[g][hash_index]->item - 1][d]), 2);   // distance of items
                     }
                     dist = sqrt(dist);
                     if(dist < min_dist) // minimun LSH distance
@@ -361,7 +357,7 @@ int main(int argc, char* argv[])
             double true_time = sec + mic_sec*1e-6;
 
 
-            // true distance of k neighbors
+            // true distances of k neighbors
             int k_true_min_dist[input_items_counter];
             gettimeofday(&start, 0);
             for(int i=0; i<input_items_counter; i++)
@@ -383,6 +379,7 @@ int main(int argc, char* argv[])
             double temp_true_k_time = sec + mic_sec*1e-6;
 
 
+            // sort array of true distances
             gettimeofday(&start, 0);
             for(int i=0; i<input_items_counter - 1; i++)
             {
@@ -461,6 +458,7 @@ int main(int argc, char* argv[])
     fclose(output_file_ptr);
 
 
+    // free memory
     for(int i=0; i<input_items_counter; i++)
     {
         free(p[i]);
@@ -472,26 +470,16 @@ int main(int argc, char* argv[])
     }
     free(q);
 
-
-
-    // printf("~If you want to terminate the program press 'STOP'\n");
-    // printf("~If you want to continue the program press 'AGAIN'\n");
-    // char* response = malloc(sizeof(char*) + 1);
-    // scanf("%s", response);
-    // if(strcmp(response, "STOP") == 0)
-    //     return 0;
-    // else if(strcmp(response, "AGAIN") == 0)
-    // {
-    //     free(response);
-    //     rewind(input_file_ptr);
-    //     rewind(query_file_ptr);
-    //     argc = 0;
-    // }
-    // else
-    // {
-    //     printf("Wrong input. Can't continue!\n");
-    //     return 0;
-    // }
+    for(int i=0; i<input_items_counter; i++)
+    {
+        free(h_p_result[i]);
+    }
+    free(h_p_result);
+    for(int i=0; i<query_items_counter; i++)
+    {
+        free(h_q_result[i]);
+    }
+    free(h_q_result);
 
 
     
