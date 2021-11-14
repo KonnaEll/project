@@ -14,4 +14,4 @@ lsh_funcs.o: lsh_funcs.c lsh_funcs.h
 	gcc -Wall -Werror -std=c9x -c lsh_funcs.c
 
 clean:
-	rm -f cube*.o lsh*.o cluster*.o
+	rm -f cube*.o lsh*.o cluster*.o cluster
