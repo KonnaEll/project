@@ -5,182 +5,13 @@
 #include <math.h>
 #include <sys/time.h>
 #include <limits.h>
+#include "lsh_funcs.h"
+#include "cube_funcs.h"
+#include "cluster_funcs.h"
 
-int min_distance(int** p, int j, int** centroid_index, int number_of_clusters, int dimension)     // minimun distance of vector from a centroid
-{
-    int min = INT_MAX;
-    int dist;
-    for(int i=0; i<number_of_clusters; i++)
-    {
-        dist = 0;
-        for(int d=1; d<=dimension; d++)
-        {
-            dist = dist + pow((centroid_index[i][d] - p[j][d]), 2);
-        }
-        dist = sqrt(dist);
-        if(dist < min)
-        {
-            min = dist;
-        }
-    }
-    return min;
-}
-
-int max_distance(int* D, int input_items_counter, int** p)
-{
-    int max = INT_MIN;
-    int max_ind;
-    for(int i=0; i<input_items_counter; i++)
-    {
-        if(D[i] > max)
-        {
-            max = D[i];
-            max_ind = p[i][0];
-        }
-    }
-    return max_ind;
-}
-
-int min_distance_index(int** p, int j, int** centroid_index, int number_of_clusters, int dimension)
-{
-    int min = INT_MAX;
-    int dist;
-    int min_index;
-    for(int i=0; i<number_of_clusters; i++)
-    {
-        dist = 0;
-        for(int d=1; d<=dimension; d++)
-        {
-            dist = dist + pow((centroid_index[i][d] - p[j][d]), 2);
-        }
-        dist = sqrt(dist);
-        if(dist < min)
-        {
-            min = dist;
-            min_index = i;
-        }
-    }
-    return min_index;
-}
-
-float normal_distribution_number()     // random number that follows the normal distribution
-{
-    float vect1 = (rand() / ((float)RAND_MAX + 1));
-    float vect2 = (rand() / ((float)RAND_MAX + 1));
-    float number = sqrt(-2*log(vect1)) * cos(2*3.14*vect2);  // mean μ = 0, variance σ^2 = 1
-
-    return number;
-}
-
-float vectors_dot_product(int** p, float* v, int index, int dimension)   // dot product of two vectors
-{
-    float product = 0.0;
-    for(int i=0; i<dimension; i++)
-    {
-        product = product + (double)p[index][i + 1] * v[i];   // calculation of dot product
-    }
-    return product;
-}
-
-float h_function(int** p, int index, int dimension)     // calculation of h function
-{
-    float* v = malloc(sizeof(float) * dimension);
-    for(int i=0; i<dimension; i++)
-    {
-        v[i] = normal_distribution_number();    // find random v vector that follows the normal distribution
-    }
-
-    float dot_result = vectors_dot_product(p, v, index, dimension);   // calculate the dot product of the to vectors
-    int w = 6;  // stable
-    float t = (float)(rand() % 4);    // calculate t uniformly in range [0, w)
-
-    float h_result = floor((dot_result + t) / w);  // result of h function
-
-    return h_result;
-}
-
-unsigned concatenate(unsigned x, unsigned y) {
-    unsigned pow = 10;
-    while(y >= pow)
-        pow *= 10;
-
-    return x * pow + y;        
-}
-
-int * h_p(int** f, int k,int input_items_counter ){
-    int temp, a;
-    int flag=0, temp1=0;
-    int *p = malloc(sizeof(int)*input_items_counter);
-    for(long int i=0;i<input_items_counter;i++){
-        for(int j=0;j<k;j++){
-            if(flag==1){
-                temp1++;
-                a=concatenate(temp,f[i][j]);
-                temp=a;
-                if (temp1==k-1){
-                    p[i]=temp;
-                    temp1++;
-                    flag=0;
-                }
-            }else{
-                temp=f[i][j];
-            }
-           
-            if(temp1==k ){
-                temp1=0;
-            }else{
-                flag=1;
-            }
-        }
-    }
-    return p;
-}
-
-int con(int x, int k){
-    int digit;
-    int i=0;
-    int arr[k];
-    int mynum=0;
-    int temp=0;
-    while (x!=0){
-        digit=x % 10;
-        arr[i]=digit;
-        i++;
-        x=x/10;
-    }
-    for(int j=0;j<i;j++)
-    {
-        temp=arr[j] * pow(2,j);
-        mynum=mynum + temp;
-    }
-
-    return mynum;
-}
-
-int hammingDistance(int n1, int n2)
-{
-    int x = n1 ^ n2;
-     int setBits = 0;
-
-    while (x > 0)
-    {
-        setBits += x & 1;
-        x >>= 1;
-    }
- 
-    return setBits;
-}
-
-struct Hash_Node
-{
-    int item;
-    int ID;
-    struct Hash_Node* next;
-};
 
 int main(int argc, char* argv[])
 {
-    clock_t beg = clock();
 	// parameters check
     char* input_file = malloc(sizeof(char*) + 1);
     char* configuration_file = malloc(sizeof(char*) + 1);
@@ -352,7 +183,7 @@ int main(int argc, char* argv[])
         {
             for(int z=1; z<dimension; z++)
             {
-                previous_centroid_index[i][z] == -1;
+                previous_centroid_index[i][z] = -1;
             }
         }
         int count;
@@ -494,7 +325,7 @@ int main(int argc, char* argv[])
             {
                 for(int z=1; z<dimension; z++)
                 {
-                    previous_centroid_index[i][z] == -1;
+                    previous_centroid_index[i][z] = -1;
                 }
             }
 
@@ -733,103 +564,124 @@ int main(int argc, char* argv[])
             long mic_sec = stop.tv_usec - start.tv_usec;
             double clustering_time = sec + mic_sec*1e-6;
 
-            if(complete == 0)
-            {
-                for(int m=0; m<number_of_clusters; m++)
+            if(complete != 0)
+            {   for(int m=0; m<number_of_clusters; m++)
                 {
                     fprintf(output_file_ptr, "CLUSTER-%d ", m+1);
-                    fprintf(output_file_ptr, "(centroid: ");
+                    fprintf(output_file_ptr, "{centroid: ");
                     for(int i=0; i<dimension; i++)
                         fprintf(output_file_ptr, "%d ", centroid_index[m][i]);
-                    fprintf(output_file_ptr, ")\n\n");
+                    for(int i=0; i<j[m]; i++)
+                        fprintf(output_file_ptr, ", %d", radius[m][i]);
+                    fprintf(output_file_ptr, "}\n\n");
                 }
-                fprintf(output_file_ptr, "clustering time: %f\n\n", clustering_time);
             }
             else
             {
                 for(int m=0; m<number_of_clusters; m++)
                 {
                     fprintf(output_file_ptr, "CLUSTER-%d ", m+1);
-                    fprintf(output_file_ptr, "(centroid: ");
+                    fprintf(output_file_ptr, "{size: %d, ", j[m]);
+                    fprintf(output_file_ptr, "centroid: ");
                     for(int i=0; i<dimension; i++)
                         fprintf(output_file_ptr, "%d ", centroid_index[m][i]);
-                    for(int i=0; i<j[m]; i++)
-                        fprintf(output_file_ptr, ", %d", radius[m][i]);
-                    fprintf(output_file_ptr, ")\n\n");
+                    fprintf(output_file_ptr, "}\n\n");
                 }
-            }
-
-            // Silhouette
-            int dist;
-            int min_ind[number_of_clusters];
-            for(int i=0; i<number_of_clusters; i++)     // which is the closest centroid to each centroid
-            {
-                min = INT_MAX;
-                for(int j=0; j<number_of_clusters; j++)
+                fprintf(output_file_ptr, "clustering time: %f\n\n", clustering_time);
+        
+                // Silhouette
+                int dist;
+                int min_ind[number_of_clusters];
+                for(int i=0; i<number_of_clusters; i++)     // which is the closest centroid to each centroid
                 {
-                    if(i != j)
+                    min = INT_MAX;
+                    for(int j=0; j<number_of_clusters; j++)
+                    {
+                        if(i != j)
+                        {
+                            dist = 0;
+                            for(int d=1; d<=dimension; d++)
+                            {
+                                dist = dist + pow((centroid_index[i][d] - centroid_index[j][d]), 2);
+                            }
+                            dist = sqrt(dist);
+                            if(dist < min)
+                            {
+                                min = dist;
+                                min_ind[i] = j;
+                            }
+                        }
+                    }
+                }
+
+                int clust, a_i, b;
+                int sum = 0;
+                int s[input_items_counter];
+                for(int i=0; i<input_items_counter; i++)
+                {
+                    clust = centroids[i];
+                    for(int k=0; k<j[clust]; k++)
                     {
                         dist = 0;
                         for(int d=1; d<=dimension; d++)
                         {
-                            dist = dist + pow((centroid_index[i][d] - centroid_index[j][d]), 2);
+                            dist = dist + pow((p[i][d] - p[radius[clust][k] - 1][d]), 2);
                         }
                         dist = sqrt(dist);
-                        if(dist < min)
+                        sum = sum + dist;
+                    }
+                    a_i = sum / j[clust];
+                    sum = 0;
+
+                    clust = min_ind[clust];     // closest centroid
+                    for(int k=0; k<j[clust]; k++)
+                    {
+                        dist = 0;
+                        for(int d=1; d<=dimension; d++)
                         {
-                            min = dist;
-                            min_ind[i] = j;
+                            dist = dist + pow((p[i][d] - p[radius[clust][k] - 1][d]), 2);
+                        }
+                        dist = sqrt(dist);
+                        sum = sum + dist;
+                    }
+                    b = sum / j[clust];
+                    sum = 0;
+
+                    if(a_i > b)
+                        s[i] = (b / a_i) -1;
+                    else if(b > a_i)
+                        s[i] = 1 - (a_i / b);
+                    else
+                        s[i] = 0;
+                }
+
+                float average_per_cluster[number_of_clusters];
+                for(int i=0; i<number_of_clusters; i++)
+                    average_per_cluster[i] = 0;
+                for(int i=0; i<input_items_counter; i++)
+                {
+                    for(int m=0; m<number_of_clusters; m++)
+                    {
+                        if(centroids[i] == m)
+                        {
+                            average_per_cluster[m] = average_per_cluster[m] + s[i];
+                            continue;
                         }
                     }
                 }
-            }
 
-            int clust, a, b;
-            int sum = 0;
-            int s[input_items_counter];
-            for(int i=0; i<input_items_counter; i++)
-            {
-                clust = centroids[i];
-                for(int k=0; k<j[clust]; k++)
+                fprintf(output_file_ptr, "Silhouette: [");
+                for(int m=0; m<number_of_clusters; m++)
                 {
-                    dist = 0;
-                    for(int d=1; d<=dimension; d++)
-                    {
-                        dist = dist + pow((p[i][d] - p[radius[clust][k] - 1][d]), 2);
-                    }
-                    dist = sqrt(dist);
-                    sum = sum + dist;
+                    fprintf(output_file_ptr, "%f, ", average_per_cluster[m] / j[m]);
                 }
-                a = sum / j[clust];
-                sum = 0;
 
-                clust = min_ind[clust];     // closest centroid
-                for(int k=0; k<j[clust]; k++)
-                {
-                    dist = 0;
-                    for(int d=1; d<=dimension; d++)
-                    {
-                        dist = dist + pow((p[i][d] - p[radius[clust][k] - 1][d]), 2);
-                    }
-                    dist = sqrt(dist);
-                    sum = sum + dist;
-                }
-                b = sum / j[clust];
-                sum = 0;
-
-                if(a > b)
-                    s[i] = (b / a) -1;
-                else if(b > a)
-                    s[i] = 1 - (a / b);
-                else
-                    s[i] = 0;
+                float total_average_sil = 0;
+                for(int i=0; i<input_items_counter; i++)
+                    total_average_sil = total_average_sil + s[i];
+                total_average_sil = total_average_sil / input_items_counter;
+                fprintf(output_file_ptr, "%f]", total_average_sil);
             }
-
-            float total_average_sil;
-            for(int i=0; i<input_items_counter; i++)
-                total_average_sil = total_average_sil + s[i];
-            total_average_sil = total_average_sil / input_items_counter;
-            fprintf(output_file_ptr, "stotal: %f\n", total_average_sil);
         }
     }
     else if(strcmp(method, "Hypercube") == 0)
@@ -928,7 +780,7 @@ int main(int argc, char* argv[])
         {
             for(int z=1; z<dimension; z++)
             {
-                previous_centroid_index[i][z] == -1;
+                previous_centroid_index[i][z] = -1;
             }
         }
         int** radius = malloc(sizeof(int*) * number_of_clusters);    // array for vectors within radius
@@ -991,7 +843,6 @@ int main(int argc, char* argv[])
             int R = min / 2;
             int q_hash_index[number_of_clusters];
             int k_ID[number_of_clusters];
-            struct Hash_Node* temp[number_of_clusters];
             int * a1=h_p(f1,k,number_of_clusters);
             for(int m=0; m<number_of_clusters; m++)    // for every query show the results
             {
@@ -1003,14 +854,17 @@ int main(int argc, char* argv[])
             for(int m=0; m<number_of_clusters; m++)
                 count[m] = 0;
             int cntr = 0;
+            int cp;
             while(1)
             {
                 for(int m=0; m<number_of_clusters; m++)    // for every query show the results
                 {
-                    temp[m] = hash_tables[q_hash_index[m]];
+                    for(int t=0;t<TableSize;t++){
                     while(hash_tables[q_hash_index[m]] != NULL)
                     {
-                        if(k_ID[m] == hash_tables[q_hash_index[m]]->ID)  // compare the IDs
+                        cp=0;
+                        int hdi=hammingDistance(hash_index,t);
+                        if((k_ID[m] == hash_tables[q_hash_index[m]]->ID || hdi<=probes) && cp<=M)  // compare the IDs
                         {
                             // calculate distance
                             int dist = 0;
@@ -1067,6 +921,7 @@ int main(int argc, char* argv[])
                             }
                         }
                         hash_tables[q_hash_index[m]] = hash_tables[q_hash_index[m]]->next;
+                    }
                     }
                     if(j_temp[m] == j[m])
                     {
@@ -1161,7 +1016,20 @@ int main(int argc, char* argv[])
         long mic_sec = stop.tv_usec - start.tv_usec;
         double clustering_time = sec + mic_sec*1e-6;
 
-        if(complete == 0)
+        if(complete != 0)
+        {   for(int m=0; m<number_of_clusters; m++)
+            {
+                fprintf(output_file_ptr, "CLUSTER-%d ", m+1);
+                fprintf(output_file_ptr, "size: %d, ", j[m]);
+                fprintf(output_file_ptr, "centroid: ");
+                for(int i=0; i<dimension; i++)
+                    fprintf(output_file_ptr, "%d ", centroid_index[m][i]);
+                for(int i=0; i<j[m]; i++)
+                    fprintf(output_file_ptr, ", %d", radius[m][i]);
+                fprintf(output_file_ptr, ")\n\n");
+            }
+        }
+        else
         {
             for(int m=0; m<number_of_clusters; m++)
             {
@@ -1172,97 +1040,102 @@ int main(int argc, char* argv[])
                 fprintf(output_file_ptr, ")\n\n");
             }
             fprintf(output_file_ptr, "clustering time: %f\n\n", clustering_time);
-        }
-        else
-        {
-            for(int m=0; m<number_of_clusters; m++)
+        
+            // Silhouette
+            int dist;
+            int min_ind[number_of_clusters];
+            for(int i=0; i<number_of_clusters; i++)     // which is the closest centroid to each centroid
             {
-                fprintf(output_file_ptr, "CLUSTER-%d ", m+1);
-                fprintf(output_file_ptr, "(centroid: ");
-                for(int i=0; i<dimension; i++)
-                    fprintf(output_file_ptr, "%d ", centroid_index[m][i]);
-                for(int i=0; i<j[m]; i++)
-                    fprintf(output_file_ptr, ", %d", radius[m][i]);
-                fprintf(output_file_ptr, ")\n\n");
+                min = INT_MAX;
+                for(int j=0; j<number_of_clusters; j++)
+                {
+                    if(i != j)
+                    {
+                        dist = 0;
+                        for(int d=1; d<=dimension; d++)
+                        {
+                            dist = dist + pow((centroid_index[i][d] - centroid_index[j][d]), 2);
+                        }
+                        dist = sqrt(dist);
+                        if(dist < min)
+                        {
+                            min = dist;
+                            min_ind[i] = j;
+                        }
+                    }
+                }
             }
-        }
 
-        // Silhouette
-        int dist;
-        int min_ind[number_of_clusters];
-        for(int i=0; i<number_of_clusters; i++)     // which is the closest centroid to each centroid
-        {
-            min = INT_MAX;
-            for(int j=0; j<number_of_clusters; j++)
+            int clust, a_i, b;
+            int sum = 0;
+            int s[input_items_counter];
+            for(int i=0; i<input_items_counter; i++)
             {
-                if(i != j)
+                clust = centroids[i];
+                for(int k=0; k<j[clust]; k++)
                 {
                     dist = 0;
                     for(int d=1; d<=dimension; d++)
                     {
-                        dist = dist + pow((centroid_index[i][d] - centroid_index[j][d]), 2);
+                        dist = dist + pow((p[i][d] - p[radius[clust][k] - 1][d]), 2);
                     }
                     dist = sqrt(dist);
-                    if(dist < min)
+                    sum = sum + dist;
+                }
+                a_i = sum / j[clust];
+                sum = 0;
+
+                clust = min_ind[clust];     // closest centroid
+                for(int k=0; k<j[clust]; k++)
+                {
+                    dist = 0;
+                    for(int d=1; d<=dimension; d++)
                     {
-                        min = dist;
-                        min_ind[i] = j;
+                        dist = dist + pow((p[i][d] - p[radius[clust][k] - 1][d]), 2);
+                    }
+                    dist = sqrt(dist);
+                    sum = sum + dist;
+                }
+                b = sum / j[clust];
+                sum = 0;
+
+                if(a_i > b)
+                    s[i] = (b / a_i) -1;
+                else if(b > a_i)
+                    s[i] = 1 - (a_i / b);
+                else
+                    s[i] = 0;
+            }
+
+            float average_per_cluster[number_of_clusters];
+            for(int i=0; i<number_of_clusters; i++)
+                average_per_cluster[i] = 0;
+            for(int i=0; i<input_items_counter; i++)
+            {
+                for(int m=0; m<number_of_clusters; m++)
+                {
+                    if(centroids[i] == m)
+                    {
+                        average_per_cluster[m] = average_per_cluster[m] + s[i];
+                        continue;
                     }
                 }
             }
-        }
 
-        int clust, a_i, b;
-        int sum = 0;
-        int s[input_items_counter];
-        for(int i=0; i<input_items_counter; i++)
-        {
-            clust = centroids[i];
-            for(int k=0; k<j[clust]; k++)
+            fprintf(output_file_ptr, "Silhouette: [");
+            for(int m=0; m<number_of_clusters; m++)
             {
-                dist = 0;
-                for(int d=1; d<=dimension; d++)
-                {
-                    dist = dist + pow((p[i][d] - p[radius[clust][k] - 1][d]), 2);
-                }
-                dist = sqrt(dist);
-                sum = sum + dist;
+                fprintf(output_file_ptr, "%f, ", average_per_cluster[m] / j[m]);
             }
-            a_i = sum / j[clust];
-            sum = 0;
 
-            clust = min_ind[clust];     // closest centroid
-            for(int k=0; k<j[clust]; k++)
-            {
-                dist = 0;
-                for(int d=1; d<=dimension; d++)
-                {
-                    dist = dist + pow((p[i][d] - p[radius[clust][k] - 1][d]), 2);
-                }
-                dist = sqrt(dist);
-                sum = sum + dist;
-            }
-            b = sum / j[clust];
-            sum = 0;
-
-            if(a_i > b)
-                s[i] = (b / a_i) -1;
-            else if(b > a_i)
-                s[i] = 1 - (a_i / b);
-            else
-                s[i] = 0;
+            float total_average_sil = 0;
+            for(int i=0; i<input_items_counter; i++)
+                total_average_sil = total_average_sil + s[i];
+            total_average_sil = total_average_sil / input_items_counter;
+            fprintf(output_file_ptr, "%f]", total_average_sil);
         }
-
-        float total_average_sil;
-        for(int i=0; i<input_items_counter; i++)
-            total_average_sil = total_average_sil + s[i];
-        total_average_sil = total_average_sil / input_items_counter;
-        fprintf(output_file_ptr, "stotal: %f\n", total_average_sil);
     }
 
 
-
-    clock_t en = clock();
-    printf("%f\n", (double)(en - beg) / CLOCKS_PER_SEC);
     return 0;
 }
